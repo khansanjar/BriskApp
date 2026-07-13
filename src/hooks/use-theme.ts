@@ -1,14 +1,10 @@
-/**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
- */
-
+// src/hooks/use-theme.ts
+// Returns the resolved color palette (light or dark) based on the user's
+// theme-mode preference (system / light / dark). Components call `useTheme()`
+// exactly as before — they just get the right tokens for the active mode.
 import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemeMode } from '@/theme/theme-context';
 
 export function useTheme() {
-  const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
-
-  return Colors[theme];
+  return useThemeMode().colors;
 }

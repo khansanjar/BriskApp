@@ -1,42 +1,33 @@
 {
   "expo": {
-    "name": "briskapp",
-    "slug": "briskapp",
+    "name": "Brisk Transfers Driver",
+    "slug": "brisk-transfers-driver",
+    "scheme": "brisktransfers",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "briskapp",
     "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
     "ios": {
-      "icon": "./assets/expo.icon"
+      "bundleIdentifier": "com.brisktransfers.driver",
+      "deploymentTarget": "16.4",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Hum aapki location use karte hain taake customer ko live tracking dikha sakein jab aap ride pe hon.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Background me bhi location chahiye taake trip ke dauran tracking na roke."
+      }
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false
-    },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "package": "com.brisktransfers.driver",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
-        }
-      ]
-    ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    }
+      "expo-secure-store",
+      "expo-location",
+      "expo-notifications",
+      "expo-web-browser"
+    ]
   }
 }

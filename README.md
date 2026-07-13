@@ -1,56 +1,56 @@
-# Welcome to your Expo app 👋
+# Brisk Transfers — Driver App (Expo SDK 56)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Run karne ka tarika
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Agar naya project scaffold kar rahe hain (ye files kisi fresh project me daalne ke liye hain):
 
-### Other setup steps
+```bash
+npx create-expo-app@latest brisk-transfers-driver --template default@next
+cd brisk-transfers-driver
+# ab is zip ki files apne project me copy/replace karein (App.tsx, app.json, package.json, src/)
+npm install
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Folder Structure
 
-## Learn more
+```
+brisk-app/
+ ├─ App.tsx                 ← entry point, push notification handler
+ ├─ app.json                ← Expo config (permissions, bundle IDs, SDK plugins)
+ ├─ package.json            ← Expo SDK 56 pinned dependencies
+ └─ src/
+     ├─ api/                ← ek file per backend module (client.ts = shared fetch wrapper)
+     ├─ store/               ← Zustand: authStore (session), themeStore (dark mode)
+     ├─ theme/               ← colors.ts (light/dark tokens), typography.ts, spacing.ts
+     ├─ components/ui/       ← Button, Card, Badge, Input, EmptyState
+     ├─ components/booking/  ← BookingCard, StatusTimeline
+     ├─ screens/
+     │   ├─ auth/            ← Login, Register, ForgotPassword, ResetPassword
+     │   ├─ dashboard/       ← DashboardScreen
+     │   ├─ bookings/        ← BookingsListScreen, BookingDetailScreen
+     │   ├─ notifications/   ← NotificationsScreen
+     │   └─ profile/         ← ProfileScreen
+     ├─ navigation/          ← RootNavigator (auth/app switch), AuthNavigator, AppTabs
+     └─ hooks/               ← usePushToken, useLocationTracking
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Assumptions Made
+- **Navigation:** React Navigation (native-stack + bottom-tabs) chuna gaya hai, Expo Router nahi — agar file-based routing chahiye to `navigation/` folder ko Expo Router conventions me convert karna hoga.
+- **State/data fetching:** Simplicity ke liye local `useState`/`useEffect` + pull-to-refresh use kiya hai, na ke React Query. Agar caching/retry chahiye to har screen ke `load()` function ko `useQuery` se wrap kiya ja sakta hai.
+- **Location queue:** `useLocationTracking.ts` me abhi in-memory queue hai (app restart pe queue clear ho jati hai). Production ke liye ise `expo-file-system` ya SQLite se persist karein.
+- **Icons:** Is code me koi icon library directly use nahi hui — `@react-native-vector-icons/*` install karke tab bar / buttons me icons add kar sakte hain.
+- **Profile photo upload:** `profile_photo` field ek URL leta hai — actual image picker/upload flow (Expo ImagePicker + storage endpoint) is scope se bahar hai, sirf field update wired hai.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## API Base URL
+`src/api/client.ts` me `BASE_URL` constant hai — staging/production switch karna ho to isay env variable (`EXPO_PUBLIC_API_URL`) se replace kar dein.
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Next Steps
+1. `npm install` karein, phir `npx expo start`.
+2. Dev client ya Expo Go (SDK 56 compatible) me test karein.
+3. Location aur push notification permissions physical device par test karein (simulator me push kaam nahi karta).
+4. Dark mode Profile tab se toggle kar ke sab screens check karein.
