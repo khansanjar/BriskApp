@@ -1,4 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import { type ComponentProps } from 'react';
 
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -6,6 +8,8 @@ import { Spacing } from '@/constants/theme';
 import { formatCurrency, formatDate, formatTime } from '@/lib/format';
 import { useTheme } from '@/hooks/use-theme';
 import type { Booking } from '@/lib/api';
+
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
 export function BookingCard({
   booking,
@@ -38,9 +42,9 @@ export function BookingCard({
         </View>
 
         <View style={styles.metaRow}>
-          <Meta icon="📅" text={formatDate(booking.pickup_date)} />
-          <Meta icon="🕒" text={formatTime(booking.pickup_time)} />
-          {booking.vehicle_type ? <Meta icon="🚗" text={booking.vehicle_type} /> : null}
+          <Meta icon="calendar-outline" text={formatDate(booking.pickup_date)} />
+          <Meta icon="time-outline" text={formatTime(booking.pickup_time)} />
+          {booking.vehicle_type ? <Meta icon="car-outline" text={booking.vehicle_type} /> : null}
         </View>
 
         <View style={[styles.footer, { borderTopColor: theme.border }]}>
@@ -61,11 +65,11 @@ export function BookingCard({
   );
 }
 
-function Meta({ icon, text }: { icon: string; text: string }) {
+function Meta({ icon, text }: { icon: IoniconName; text: string }) {
   const theme = useTheme();
   return (
     <View style={styles.meta}>
-      <Text style={styles.metaIcon}>{icon}</Text>
+      <Ionicons name={icon} size={14} color={theme.textSecondary} />
       <Text style={[styles.metaText, { color: theme.textSecondary }]}>{text}</Text>
     </View>
   );
@@ -96,7 +100,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing.three,
   },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaIcon: { fontSize: 14 },
   metaText: { fontSize: 13, fontWeight: 500 },
   footer: {
     flexDirection: 'row',

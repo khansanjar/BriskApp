@@ -102,14 +102,19 @@ export default function BookingsListScreen() {
             <Pressable
               key={t.key}
               onPress={() => setTab(t.key)}
-              style={[
+              style={({ pressed }) => [
                 styles.tab,
                 {
-                  backgroundColor: active ? theme.brand : theme.surface,
-                  borderColor: theme.border,
+                  backgroundColor: active ? theme.brand : theme.surfaceSecondary,
                 },
+                pressed && !active ? styles.tabPressed : null,
               ]}>
-              <Text style={{ color: active ? theme.brandText : theme.text, fontWeight: '700' }}>
+              <Text
+                style={{
+                  color: active ? theme.brandText : theme.textSecondary,
+                  fontWeight: '700',
+                  fontSize: 14,
+                }}>
                 {t.label}
               </Text>
             </Pressable>
@@ -133,9 +138,18 @@ export default function BookingsListScreen() {
         }
         ListEmptyComponent={
           initialLoading ? null : error ? (
-            <EmptyState icon="⚠️" title="Something went wrong" description={error} />
+            <EmptyState
+              icon="alert-circle-outline"
+              tone="danger"
+              title="Something went wrong"
+              description={error}
+            />
           ) : (
-            <EmptyState icon="📋" title="No bookings here" description="Nothing in this category yet." />
+            <EmptyState
+              icon="documents-outline"
+              title="No bookings here"
+              description="Nothing in this category yet."
+            />
           )
         }
         ListFooterComponent={loadingMore ? <ActivityIndicator color={theme.brand} style={{ padding: Spacing.three }} /> : null}
@@ -149,14 +163,18 @@ const styles = StyleSheet.create({
   tabRow: {
     flexDirection: 'row',
     gap: Spacing.two,
-    padding: Spacing.four,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.three,
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 999,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.three,
+    borderRadius: 14,
     alignItems: 'center',
-    borderWidth: 1,
+    justifyContent: 'center',
   },
+  tabPressed: { opacity: 0.7 },
   list: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six },
 });

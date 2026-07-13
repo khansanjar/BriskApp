@@ -2,7 +2,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
+import { Avatar } from '@/components/ui/avatar';
 import { BookingCard } from '@/components/booking-card';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -81,38 +83,46 @@ export default function DashboardScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.brand} />
         ),
       }}>
-      <View style={styles.greeting}>
-        <Text style={[styles.greetingText, { color: theme.textSecondary }]}>
-          {greeting()},
-        </Text>
-        <Text style={[styles.greetingName, { color: theme.text }]}>
-          {user?.user_fname ?? 'Driver'}
-        </Text>
+      {/* Greeting + avatar in a single horizontal row */}
+      <View style={styles.greetingRow}>
+        <View style={styles.greetingCopy}>
+          <Text style={[styles.greetingText, { color: theme.textSecondary }]}>{greeting()}</Text>
+          <Text style={[styles.greetingName, { color: theme.text }]} numberOfLines={1}>
+            Welcome, {user?.user_fname ?? 'Driver'} 👋
+          </Text>
+        </View>
+        <Avatar
+          firstName={user?.user_fname}
+          lastName={user?.user_lname}
+          photo={user?.profile_photo ?? null}
+          size={48}
+        />
       </View>
 
-      <View style={styles.counts}>
-        <View style={styles.countItem}>
-          <View style={[styles.countCircle, { backgroundColor: PENDING_COLOR }]}>
-            <Text style={styles.countNumber}>{todayRides.length}</Text>
-          </View>
-          <Text style={[styles.countLabel, { color: theme.textSecondary }]}>Pending rides</Text>
-        </View>
-        <View style={styles.countItem}>
-          <View style={[styles.countCircle, { backgroundColor: NEXTDAY_COLOR }]}>
-            <Text style={styles.countNumber}>{nextDayRides.length}</Text>
-          </View>
-          <Text style={[styles.countLabel, { color: theme.textSecondary }]}>Next day rides</Text>
-        </View>
+      {/* Metric cards */}
+      <View style={styles.metrics}>
+        <MetricCard count={todayRides.length} label="Pending rides" color={PENDING_COLOR} />
+        <MetricCard count={nextDayRides.length} label="Next day rides" color={NEXTDAY_COLOR} />
       </View>
 
       <SectionHeader title="Today's pending rides" />
 
       {error && data == null ? (
-        <EmptyState icon="⚠️" title="Something went wrong" description={error} />
+        <EmptyState
+          icon="alert-circle-outline"
+          tone="danger"
+          title="Something went wrong"
+          description={error}
+        />
       ) : !data ? (
         <ActivityIndicator color={theme.brand} style={{ padding: Spacing.three }} />
       ) : todayRides.length === 0 ? (
-        <EmptyState icon="🚗" title="No rides today" description="No pending rides scheduled for today." />
+        <EmptyState
+          compact
+          icon="car-outline"
+          title="No rides today"
+          description="No pending rides scheduled for today."
+        />
       ) : (
         todayRides.map((item: Booking) => (
           <BookingCard key={item.booking_id} booking={item} onPress={() => openBooking(item.booking_id)} />
@@ -122,7 +132,12 @@ export default function DashboardScreen() {
       <SectionHeader title="Next day's rides" />
 
       {data && nextDayRides.length === 0 ? (
-        <EmptyState icon="📆" title="Nothing yet" description="Upcoming rides for tomorrow will appear here." />
+        <EmptyState
+          compact
+          icon="calendar-outline"
+          title="Nothing yet"
+          description="Upcoming rides for tomorrow will appear here."
+        />
       ) : (
         data &&
         nextDayRides.map((item: Booking) => (
@@ -133,7 +148,12 @@ export default function DashboardScreen() {
       <SectionHeader title="Recent rides" />
 
       {data && history.length === 0 ? (
-        <EmptyState icon="🕘" title="No history" description="Your completed rides will show up here." />
+        <EmptyState
+          compact
+          icon="time-outline"
+          title="No history"
+          description="Your completed rides will show up here."
+        />
       ) : (
         data &&
         history.map((item: HistoryBooking) => (
@@ -141,7 +161,7 @@ export default function DashboardScreen() {
             key={item.booking_id}
             onPress={() => openBooking(item.booking_id)}
             style={({ pressed }) => (pressed ? styles.pressed : null)}>
-            <Card>
+            <Card style={styles.historyCard}>
               <View style={styles.historyRow}>
                 <View style={styles.historyRoute}>
                   <Text style={[styles.historyLocation, { color: theme.text }]} numberOfLines={1}>
@@ -155,9 +175,12 @@ export default function DashboardScreen() {
                   {formatCurrency(item.total_fare)}
                 </Text>
               </View>
-              <Text style={[styles.historyMeta, { color: theme.textSecondary }]}>
-                {item.pickup_date} · Completed
-              </Text>
+              <View style={styles.historyMetaRow}>
+                <Ionicons name="checkmark-circle" size={14} color={theme.success} />
+                <Text style={[styles.historyMeta, { color: theme.textSecondary }]}>
+                  {item.pickup_date} · Completed
+                </Text>
+              </View>
             </Card>
           </Pressable>
         ))
@@ -166,26 +189,50 @@ export default function DashboardScreen() {
   );
 }
 
+function MetricCard({ count, label, color }: { count: number; label: string; color: string }) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.metricCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <Text style={[styles.metricNumber, { color: theme.text }]}>{count}</Text>
+      <View style={styles.metricLabelRow}>
+        <View style={[styles.metricDot, { backgroundColor: color }]} />
+        <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>{label}</Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  greeting: { marginBottom: Spacing.three },
-  greetingText: { fontSize: 15 },
-  greetingName: { fontSize: 26, fontWeight: 800, marginTop: 2 },
-  counts: {
+  greetingRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.three,
     marginBottom: Spacing.four,
   },
-  countItem: { flex: 1, alignItems: 'center' },
-  countCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+  greetingCopy: { flex: 1 },
+  greetingText: { fontSize: 14, fontWeight: 500 },
+  greetingName: { fontSize: 24, fontWeight: 800, marginTop: 2 },
+
+  metrics: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+    marginBottom: Spacing.one,
   },
-  countNumber: { color: '#ffffff', fontSize: 32, fontWeight: 800 },
-  countLabel: { fontSize: 13, fontWeight: 600, marginTop: 8 },
+  metricCard: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    gap: Spacing.two,
+  },
+  metricNumber: { fontSize: 34, fontWeight: 800, lineHeight: 38 },
+  metricLabelRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  metricDot: { width: 8, height: 8, borderRadius: 4 },
+  metricLabel: { fontSize: 13, fontWeight: 600 },
+
   pressed: { opacity: 0.92 },
+  historyCard: { marginBottom: Spacing.two },
   historyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -195,5 +242,6 @@ const styles = StyleSheet.create({
   historyRoute: { flex: 1, gap: 4 },
   historyLocation: { fontSize: 15, fontWeight: 600 },
   historyFare: { fontSize: 16, fontWeight: 800 },
-  historyMeta: { fontSize: 12, marginTop: 6 },
+  historyMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  historyMeta: { fontSize: 12 },
 });

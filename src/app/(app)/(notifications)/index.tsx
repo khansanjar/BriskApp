@@ -82,7 +82,7 @@ export default function NotificationsScreen() {
   return (
     <FlatList
       style={{ backgroundColor: theme.background }}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, items.length === 0 && styles.listEmpty]}
       data={items}
       keyExtractor={(item) => String(item.id)}
       renderItem={renderItem}
@@ -91,9 +91,18 @@ export default function NotificationsScreen() {
       }
       ListEmptyComponent={
         initialLoading ? null : error ? (
-          <EmptyState icon="⚠️" title="Something went wrong" description={error} />
+          <EmptyState
+            icon="alert-circle-outline"
+            tone="danger"
+            title="Something went wrong"
+            description={error}
+          />
         ) : (
-          <EmptyState icon="🔔" title="No notifications" description="You're all caught up." />
+          <EmptyState
+            icon="notifications-outline"
+            title="No notifications"
+            description="You're all caught up."
+          />
         )
       }
     />
@@ -102,6 +111,7 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   list: { padding: Spacing.four, paddingBottom: Spacing.six },
+  listEmpty: { flexGrow: 1, justifyContent: 'center' },
   card: { marginBottom: Spacing.two },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 16, fontWeight: 700, flexShrink: 1 },

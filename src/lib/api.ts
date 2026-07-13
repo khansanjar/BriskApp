@@ -8,8 +8,7 @@
 
 import { clearToken, getToken } from '@/lib/storage';
 
-export const API_BASE = 'https://brisktransfers.vectosol.online/api/driver';
-
+export const API_BASE = process.env.EXPO_PUBLIC_API_URL;
 export type DriverStatus =
   | 'assigned'
   | 'heading_to_pickup'

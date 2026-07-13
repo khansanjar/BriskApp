@@ -1,6 +1,7 @@
 // src/app/(app)/(profile)/index.tsx
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -13,10 +14,10 @@ import { useTheme } from '@/hooks/use-theme';
 import { updateProfile, type User } from '@/lib/api';
 import { useThemeMode, type ThemeMode } from '@/theme/theme-context';
 
-const MODES: { key: ThemeMode; label: string }[] = [
-  { key: 'system', label: 'System' },
-  { key: 'light', label: 'Light' },
-  { key: 'dark', label: 'Dark' },
+const MODES: { key: ThemeMode; label: string; icon: 'phone-portrait-outline' | 'sunny-outline' | 'moon-outline' }[] = [
+  { key: 'system', label: 'System', icon: 'phone-portrait-outline' },
+  { key: 'light', label: 'Light', icon: 'sunny-outline' },
+  { key: 'dark', label: 'Dark', icon: 'moon-outline' },
 ];
 
 export default function ProfileScreen() {
@@ -57,12 +58,15 @@ export default function ProfileScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <Avatar
-          firstName={user?.user_fname}
-          lastName={user?.user_lname}
-          photo={user?.profile_photo ?? null}
-          size={72}
-        />
+        <View style={[styles.avatarRing, { backgroundColor: theme.brandSoft, borderColor: theme.border }]}>
+          <Avatar
+            firstName={user?.user_fname}
+            lastName={user?.user_lname}
+            photo={user?.profile_photo ?? null}
+            size={84}
+            fallback="icon"
+          />
+        </View>
         <Text style={[styles.name, { color: theme.text }]}>
           {user?.user_fname} {user?.user_lname}
         </Text>
@@ -93,7 +97,8 @@ export default function ProfileScreen() {
               <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Phone</Text>
               <Text style={[styles.infoValue, { color: theme.text }]}>{user?.userphone}</Text>
             </View>
-            <Pressable onPress={() => setEditing(true)}>
+            <Pressable onPress={() => setEditing(true)} style={styles.editRow}>
+              <Ionicons name="create-outline" size={16} color={theme.brand} />
               <Text style={[styles.editLink, { color: theme.brand }]}>Edit profile</Text>
             </Pressable>
           </>
@@ -102,21 +107,25 @@ export default function ProfileScreen() {
 
       <Card style={styles.card}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Appearance</Text>
-        <View style={styles.modeRow}>
+        <View style={[styles.segment, { backgroundColor: theme.backgroundElement }]}>
           {MODES.map((m) => {
             const active = mode === m.key;
             return (
               <Pressable
                 key={m.key}
                 onPress={() => setMode(m.key)}
-                style={[
-                  styles.modePill,
-                  {
-                    backgroundColor: active ? theme.brand : theme.background,
-                    borderColor: theme.border,
-                  },
-                ]}>
-                <Text style={{ color: active ? theme.brandText : theme.text, fontWeight: '700' }}>
+                style={[styles.segmentBtn, active && { backgroundColor: theme.brand }]}>
+                <Ionicons
+                  name={m.icon}
+                  size={16}
+                  color={active ? theme.brandText : theme.textSecondary}
+                />
+                <Text
+                  style={{
+                    color: active ? theme.brandText : theme.textSecondary,
+                    fontWeight: '700',
+                    fontSize: 13,
+                  }}>
                   {m.label}
                 </Text>
               </Pressable>
@@ -125,13 +134,28 @@ export default function ProfileScreen() {
         </View>
       </Card>
 
-      <Button title="Log out" variant="destructive" onPress={signOut} />
+      <Pressable
+        onPress={signOut}
+        style={({ pressed }) => [
+          styles.logout,
+          { borderColor: theme.danger },
+          pressed && { backgroundColor: theme.dangerSoft },
+        ]}>
+        <Ionicons name="log-out-outline" size={20} color={theme.danger} />
+        <Text style={[styles.logoutText, { color: theme.danger }]}>Log out</Text>
+      </Pressable>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.three },
+  header: { alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.four },
+  avatarRing: {
+    padding: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginBottom: Spacing.one,
+  },
   name: { fontSize: 22, fontWeight: 800 },
   email: { fontSize: 14 },
   card: { marginBottom: Spacing.three },
@@ -145,14 +169,32 @@ const styles = StyleSheet.create({
   },
   infoLabel: { fontSize: 14 },
   infoValue: { fontSize: 14, fontWeight: 600 },
-  editLink: { marginTop: Spacing.two, fontWeight: 700 },
+  editRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.two },
+  editLink: { fontWeight: 700 },
   sectionTitle: { fontSize: 15, fontWeight: 700, marginBottom: Spacing.three },
-  modeRow: { flexDirection: 'row', gap: Spacing.two },
-  modePill: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 999,
-    alignItems: 'center',
-    borderWidth: 1,
+  segment: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    padding: 4,
+    gap: 4,
   },
+  segmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  logout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  logoutText: { fontSize: 16, fontWeight: 700 },
 });

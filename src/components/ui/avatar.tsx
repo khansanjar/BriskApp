@@ -1,8 +1,8 @@
 // src/components/ui/avatar.tsx
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { Image } from 'react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Spacing } from '@/constants/theme';
 import { getInitials } from '@/lib/format';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -11,12 +11,15 @@ interface AvatarProps {
   lastName?: string;
   photo?: string | null;
   size?: number;
+  /** `initials` (default) shows the name initials; `icon` shows a user silhouette. */
+  fallback?: 'initials' | 'icon';
 }
 
-export function Avatar({ firstName, lastName, photo, size = 48 }: AvatarProps) {
+export function Avatar({ firstName, lastName, photo, size = 48, fallback = 'initials' }: AvatarProps) {
   const theme = useTheme();
   const radius = size / 2;
   const initials = getInitials(firstName ?? '', lastName ?? '');
+  const showIcon = fallback === 'icon' || !initials;
 
   if (photo) {
     return (
@@ -38,9 +41,13 @@ export function Avatar({ firstName, lastName, photo, size = 48 }: AvatarProps) {
           backgroundColor: theme.brandSoft,
         },
       ]}>
-      <Text style={[styles.initials, { color: theme.brand, fontSize: size * 0.36 }]}>
-        {initials}
-      </Text>
+      {showIcon ? (
+        <Ionicons name="person" size={size * 0.5} color={theme.brand} />
+      ) : (
+        <Text style={[styles.initials, { color: theme.brand, fontSize: size * 0.36 }]}>
+          {initials}
+        </Text>
+      )}
     </View>
   );
 }

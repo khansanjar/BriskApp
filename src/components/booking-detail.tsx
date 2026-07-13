@@ -1,4 +1,6 @@
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import { type ComponentProps } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -7,6 +9,8 @@ import { Spacing } from '@/constants/theme';
 import { formatCurrency, formatDate, formatDateTime, formatTime } from '@/lib/format';
 import { useTheme } from '@/hooks/use-theme';
 import type { Booking, DriverStatus } from '@/lib/api';
+
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
 // Exact state machine: assigned → heading_to_pickup → arrived → in_progress → completed.
 // Only the immediate next state is offered, so no invalid transitions are possible.
@@ -76,15 +80,15 @@ export function BookingDetail({
       </Card>
 
       <Card>
-        <Row label="Date" value={formatDate(booking.pickup_date)} icon="📅" />
-        <Row label="Time" value={formatTime(booking.pickup_time)} icon="🕒" />
-        <Row label="Vehicle" value={booking.vehicle_type ?? '—'} icon="🚗" />
-        <Row label="Order ID" value={booking.order_id} icon="🧾" />
+        <Row label="Date" value={formatDate(booking.pickup_date)} icon="calendar-outline" />
+        <Row label="Time" value={formatTime(booking.pickup_time)} icon="time-outline" />
+        <Row label="Vehicle" value={booking.vehicle_type ?? '—'} icon="car-outline" />
+        <Row label="Order ID" value={booking.order_id} icon="receipt-outline" />
         {booking.started_at ? (
-          <Row label="Started" value={formatDateTime(booking.started_at)} icon="▶️" />
+          <Row label="Started" value={formatDateTime(booking.started_at)} icon="play-circle-outline" />
         ) : null}
         {booking.completed_at ? (
-          <Row label="Completed" value={formatDateTime(booking.completed_at)} icon="✅" />
+          <Row label="Completed" value={formatDateTime(booking.completed_at)} icon="checkmark-circle-outline" />
         ) : null}
       </Card>
 
@@ -157,13 +161,14 @@ function Line() {
   return <View style={styles.line} />;
 }
 
-function Row({ label, value, icon }: { label: string; value: string; icon: string }) {
+function Row({ label, value, icon }: { label: string; value: string; icon: IoniconName }) {
   const theme = useTheme();
   return (
     <View style={[styles.row, { borderBottomColor: theme.border }]}>
-      <Text style={[styles.rowLabel, { color: theme.textSecondary }]}>
-        {icon} {label}
-      </Text>
+      <View style={styles.rowLabelWrap}>
+        <Ionicons name={icon} size={16} color={theme.textSecondary} />
+        <Text style={[styles.rowLabel, { color: theme.textSecondary }]}>{label}</Text>
+      </View>
       <Text style={[styles.rowValue, { color: theme.text }]} numberOfLines={2}>
         {value}
       </Text>
@@ -195,6 +200,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  rowLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rowLabel: { fontSize: 14, fontWeight: 500 },
   rowValue: { fontSize: 14, fontWeight: 600, flexShrink: 1, textAlign: 'right', marginLeft: Spacing.three },
   customerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
