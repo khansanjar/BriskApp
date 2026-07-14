@@ -75,6 +75,8 @@ export default function DashboardScreen() {
   const todayRides = upcoming.filter((b) => dateKey(b.pickup_date) === todayKey);
   const nextDayRides = upcoming.filter((b) => dateKey(b.pickup_date) === tomorrowKey);
   const history = (data?.recent_history ?? []).slice(0, 10);
+  const dayEarnings = data?.earnings?.today;
+  const monthEarnings = data?.earnings?.this_month;
 
   return (
     <Screen
@@ -103,6 +105,29 @@ export default function DashboardScreen() {
       <View style={styles.metrics}>
         <MetricCard count={todayRides.length} label="Pending rides" color={PENDING_COLOR} />
         <MetricCard count={nextDayRides.length} label="Next day rides" color={NEXTDAY_COLOR} />
+      </View>
+
+      {/* Earnings — completed rides only */}
+      <SectionHeader title="Earnings" />
+      <View style={styles.earnings}>
+        <EarningsCard
+          label="Today"
+          icon="today-outline"
+          tint={theme.brand}
+          tintSoft={theme.brandSoft}
+          amount={dayEarnings?.amount ?? 0}
+          rides={dayEarnings?.rides_count ?? 0}
+          loading={!data}
+        />
+        <EarningsCard
+          label="This month"
+          icon="calendar-outline"
+          tint={theme.success}
+          tintSoft={theme.successSoft}
+          amount={monthEarnings?.amount ?? 0}
+          rides={monthEarnings?.rides_count ?? 0}
+          loading={!data}
+        />
       </View>
 
       <SectionHeader title="Today's pending rides" />
@@ -202,6 +227,48 @@ function MetricCard({ count, label, color }: { count: number; label: string; col
   );
 }
 
+function EarningsCard({
+  label,
+  icon,
+  tint,
+  tintSoft,
+  amount,
+  rides,
+  loading,
+}: {
+  label: string;
+  icon: 'today-outline' | 'calendar-outline';
+  tint: string;
+  tintSoft: string;
+  amount: number;
+  rides: number;
+  loading: boolean;
+}) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.earningsCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <View style={styles.earningsHeader}>
+        <View style={[styles.earningsIcon, { backgroundColor: tintSoft }]}>
+          <Ionicons name={icon} size={16} color={tint} />
+        </View>
+        <Text style={[styles.earningsLabel, { color: theme.textSecondary }]}>{label}</Text>
+      </View>
+      {loading ? (
+        <ActivityIndicator color={theme.brand} style={styles.earningsLoader} />
+      ) : (
+        <>
+          <Text style={[styles.earningsAmount, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>
+            {formatCurrency(amount)}
+          </Text>
+          <Text style={[styles.earningsSub, { color: theme.textSecondary }]}>
+            {rides} completed {rides === 1 ? 'ride' : 'rides'}
+          </Text>
+        </>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   greetingRow: {
     flexDirection: 'row',
@@ -230,6 +297,30 @@ const styles = StyleSheet.create({
   metricLabelRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   metricDot: { width: 8, height: 8, borderRadius: 4 },
   metricLabel: { fontSize: 13, fontWeight: 600 },
+
+  earnings: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+  },
+  earningsCard: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: Spacing.three,
+    gap: Spacing.two,
+  },
+  earningsHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  earningsIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  earningsLabel: { fontSize: 13, fontWeight: 600 },
+  earningsAmount: { fontSize: 24, fontWeight: 800, marginTop: Spacing.one },
+  earningsSub: { fontSize: 12, fontWeight: 500 },
+  earningsLoader: { alignSelf: 'flex-start', marginVertical: Spacing.two },
 
   pressed: { opacity: 0.92 },
   historyCard: { marginBottom: Spacing.two },

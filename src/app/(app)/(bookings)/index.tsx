@@ -128,6 +128,7 @@ export default function BookingsListScreen() {
         data={items}
         keyExtractor={(item) => String(item.booking_id)}
         renderItem={renderItem}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.brand} />
         }
@@ -176,5 +177,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabPressed: { opacity: 0.7 },
+  separator: { height: Spacing.three },
   list: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six },
 });

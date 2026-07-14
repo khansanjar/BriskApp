@@ -1,7 +1,6 @@
 import { Stack } from 'expo-router';
 
 export default function AuthLayout() {
-  console.log('CHECKIGN  ENV');
   
   return (
     <Stack

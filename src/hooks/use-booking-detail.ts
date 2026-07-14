@@ -1,12 +1,19 @@
 // src/hooks/use-booking-detail.ts
 import { useCallback, useEffect, useState } from 'react';
 
-import { getBooking, updateBookingStatus, type Booking, type DriverStatus } from '@/lib/api';
+import {
+  declineBooking,
+  getBooking,
+  updateBookingStatus,
+  type Booking,
+  type DriverStatus,
+} from '@/lib/api';
 
 export function useBookingDetail(id: number) {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [declining, setDeclining] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -42,5 +49,18 @@ export function useBookingDetail(id: number) {
     [id, load]
   );
 
-  return { booking, loading, updating, error, reload: load, update };
+  const decline = useCallback(
+    async (reason?: string) => {
+      setDeclining(true);
+      setError(null);
+      try {
+        await declineBooking(id, reason);
+      } finally {
+        setDeclining(false);
+      }
+    },
+    [id]
+  );
+
+  return { booking, loading, updating, declining, error, reload: load, update, decline };
 }

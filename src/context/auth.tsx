@@ -73,8 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [signInWithResponse]);
 
   const signOut = useCallback(async () => {
-    await Promise.all([clearToken(), clearUser()]);
-    setSession(null);
+    // Always clear the in-memory session so the router redirects to auth,
+    // even if secure-store deletion happens to fail on this device.
+    try {
+      await Promise.all([clearToken(), clearUser()]);
+    } finally {
+      setSession(null);
+    }
   }, []);
 
   const updateLocalUser = useCallback(async (user: User) => {

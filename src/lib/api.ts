@@ -49,7 +49,7 @@ export interface Booking {
   vehicle_type: string | null;
   total_fare: number;
   driver_status: DriverStatus;
-  customer: Customer;
+  customer?: Customer;
   assignment_status?: string | null;
   started_at?: string | null;
   completed_at?: string | null;
@@ -63,7 +63,7 @@ export interface HistoryBooking {
   pickup_date: string;
   completed_at: string;
   total_fare: number;
-  customer: Customer;
+  customer?: Customer;
 }
 
 export interface DashboardData {
@@ -315,6 +315,20 @@ export async function postLocationBatch(
   return request('/location/batch', {
     method: 'POST',
     body: { booking_id, locations },
+  });
+}
+
+/**
+ * Decline / cancel a ride that the driver has been assigned but not yet
+ * started. Allowed for today's and upcoming rides before the trip begins.
+ */
+export async function declineBooking(
+  id: number | string,
+  reason?: string
+): Promise<{ assignment_status?: string }> {
+  return request(`/booking/${id}/decline`, {
+    method: 'POST',
+    body: reason ? { reason } : {},
   });
 }
 

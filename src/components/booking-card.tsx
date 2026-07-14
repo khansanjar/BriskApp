@@ -50,11 +50,13 @@ export function BookingCard({
         <View style={[styles.footer, { borderTopColor: theme.border }]}>
           <View style={styles.customer}>
             <Text style={[styles.customerName, { color: theme.text }]} numberOfLines={1}>
-              {booking.customer.name}
+              {booking.customer?.name ?? 'Customer'}
             </Text>
-            <Text style={[styles.customerPhone, { color: theme.textSecondary }]}>
-              {booking.customer.phone}
-            </Text>
+            {booking.customer?.phone ? (
+              <Text style={[styles.customerPhone, { color: theme.textSecondary }]}>
+                {booking.customer.phone}
+              </Text>
+            ) : null}
           </View>
           <Text style={[styles.fare, { color: theme.text }]}>
             {formatCurrency(booking.total_fare)}

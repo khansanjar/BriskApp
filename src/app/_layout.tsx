@@ -38,13 +38,14 @@ function RootNavigator() {
     <ThemeProvider value={resolvedScheme === 'dark' ? DarkTheme : DefaultTheme}>
       {isLoading ? (
         <SplashFallback />
-      ) : session ? (
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(app)" />
-        </Stack>
       ) : (
         <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" />
+          <Stack.Protected guard={!!session}>
+            <Stack.Screen name="(app)" />
+          </Stack.Protected>
+          <Stack.Protected guard={!session}>
+            <Stack.Screen name="(auth)" />
+          </Stack.Protected>
         </Stack>
       )}
     </ThemeProvider>

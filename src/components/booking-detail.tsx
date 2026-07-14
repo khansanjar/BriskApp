@@ -1,4 +1,4 @@
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { type ComponentProps } from 'react';
 
@@ -38,17 +38,49 @@ const TRANSITIONS: Record<DriverStatus, { value: DriverStatus; label: string }[]
   return acc;
 }, {} as Record<DriverStatus, { value: DriverStatus; label: string }[]>);
 
+// A ride may only be started on its pickup day. Rides scheduled for a future
+// day (e.g. tomorrow) are locked until that day arrives.
+function isFutureRide(pickupDate: string): boolean {
+  const d = new Date(pickupDate);
+  if (Number.isNaN(d.getTime())) return false;
+  const pickupDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return pickupDay.getTime() > today.getTime();
+}
+
 export function BookingDetail({
   booking,
   onUpdate,
   updating,
+  onDecline,
+  declining,
 }: {
   booking: Booking;
   onUpdate: (status: DriverStatus) => void;
   updating: boolean;
+  onDecline: () => void;
+  declining: boolean;
 }) {
   const theme = useTheme();
   const next = TRANSITIONS[booking.driver_status] ?? [];
+  // Lock the workflow for rides that haven't started yet but are scheduled for
+  // a future day. Once a ride is in progress it always stays actionable.
+  const locked = booking.driver_status === 'assigned' && isFutureRide(booking.pickup_date);
+  // The driver may decline any today's / upcoming ride before the trip starts.
+  const canDecline =
+    booking.driver_status !== 'in_progress' && booking.driver_status !== 'completed';
+
+  function handleDecline() {
+    Alert.alert(
+      'Decline ride',
+      'Are you sure you want to decline this ride? This action cannot be undone.',
+      [
+        { text: 'Keep ride', style: 'cancel' },
+        { text: 'Decline', style: 'destructive', onPress: onDecline },
+      ]
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -97,22 +129,26 @@ export function BookingDetail({
         <View style={styles.customerRow}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.customerName, { color: theme.text }]}>
-              {booking.customer.name}
+              {booking.customer?.name ?? 'Customer'}
             </Text>
-            {booking.customer.email ? (
+            {booking.customer?.email ? (
               <Text style={[styles.customerSub, { color: theme.textSecondary }]}>
                 {booking.customer.email}
               </Text>
             ) : null}
-            <Text style={[styles.customerSub, { color: theme.textSecondary }]}>
-              {booking.customer.phone}
-            </Text>
+            {booking.customer?.phone ? (
+              <Text style={[styles.customerSub, { color: theme.textSecondary }]}>
+                {booking.customer.phone}
+              </Text>
+            ) : null}
           </View>
-          <Pressable
-            onPress={() => Linking.openURL(`tel:${booking.customer.phone}`)}
-            style={[styles.callButton, { backgroundColor: theme.brandSoft }]}>
-            <Text style={[styles.callText, { color: theme.brand }]}>Call</Text>
-          </Pressable>
+          {booking.customer?.phone ? (
+            <Pressable
+              onPress={() => Linking.openURL(`tel:${booking.customer!.phone}`)}
+              style={[styles.callButton, { backgroundColor: theme.brandSoft }]}>
+              <Text style={[styles.callText, { color: theme.brand }]}>Call</Text>
+            </Pressable>
+          ) : null}
         </View>
       </Card>
 
@@ -123,25 +159,59 @@ export function BookingDetail({
         </Card>
       ) : null}
 
-      {next.length > 0 ? (
-        <View style={styles.actions}>
-          {next.map((item, index) => (
-            <Button
-              key={item.value}
-              title={item.label}
-              variant={index === 0 ? 'primary' : 'secondary'}
-              loading={updating}
-              onPress={() => onUpdate(item.value)}
-              style={next.length > 1 ? styles.actionButton : null}
-            />
-          ))}
-        </View>
-      ) : (
+      {booking.driver_status === 'completed' ? (
         <Card>
           <Text style={[styles.done, { color: theme.success }]}>
             This ride is completed. 🎉
           </Text>
         </Card>
+      ) : (
+        <View style={styles.actions}>
+          {locked ? (
+            <Card style={styles.lockedCard}>
+              <View style={[styles.lockedIcon, { backgroundColor: theme.warningSoft }]}>
+                <Ionicons name="time-outline" size={22} color={theme.warning} />
+              </View>
+              <Text style={[styles.lockedTitle, { color: theme.text }]}>Not available yet</Text>
+              <Text style={[styles.lockedText, { color: theme.textSecondary }]}>
+                This ride is scheduled for {formatDate(booking.pickup_date)}. You can start it on
+                the pickup day.
+              </Text>
+            </Card>
+          ) : (
+            next.map((item, index) => (
+              <Button
+                key={item.value}
+                title={item.label}
+                variant={index === 0 ? 'primary' : 'secondary'}
+                loading={updating}
+                onPress={() => onUpdate(item.value)}
+                style={next.length > 1 ? styles.actionButton : null}
+              />
+            ))
+          )}
+
+          {canDecline ? (
+            <Pressable
+              onPress={handleDecline}
+              disabled={declining || updating}
+              style={({ pressed }) => [
+                styles.decline,
+                { borderColor: theme.danger },
+                declining || updating ? styles.declineDisabled : null,
+                pressed && !declining && !updating ? { backgroundColor: theme.dangerSoft } : null,
+              ]}>
+              {declining ? (
+                <ActivityIndicator color={theme.danger} />
+              ) : (
+                <>
+                  <Ionicons name="close-circle-outline" size={20} color={theme.danger} />
+                  <Text style={[styles.declineText, { color: theme.danger }]}>Decline ride</Text>
+                </>
+              )}
+            </Pressable>
+          ) : null}
+        </View>
       )}
     </View>
   );
@@ -211,5 +281,28 @@ const styles = StyleSheet.create({
   notes: { fontSize: 14, lineHeight: 20 },
   actions: { gap: Spacing.two },
   actionButton: { marginBottom: 0 },
+  decline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    marginTop: Spacing.one,
+  },
+  declineText: { fontSize: 16, fontWeight: 700 },
+  declineDisabled: { opacity: 0.6 },
+  lockedCard: { alignItems: 'center', gap: Spacing.two },
+  lockedIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.one,
+  },
+  lockedTitle: { fontSize: 16, fontWeight: 700 },
+  lockedText: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
   done: { fontSize: 15, fontWeight: 700, textAlign: 'center' },
 });
