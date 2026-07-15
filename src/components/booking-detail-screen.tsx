@@ -1,5 +1,5 @@
 // src/components/booking-detail-screen.tsx
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { Spacing } from '@/constants/theme';
@@ -48,7 +48,9 @@ export function BookingDetailScreen({ id }: { id: number }) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      contentContainerStyle={styles.content}>
       <BookingDetail
         booking={booking}
         onUpdate={update}
@@ -56,12 +58,13 @@ export function BookingDetailScreen({ id }: { id: number }) {
         onDecline={handleDecline}
         declining={declining}
       />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  content: { flexGrow: 1, paddingHorizontal: Spacing.four, paddingVertical: Spacing.four },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   message: { fontSize: 15, textAlign: 'center' },
 });

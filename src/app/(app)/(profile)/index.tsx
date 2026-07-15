@@ -1,6 +1,6 @@
 // src/app/(app)/(profile)/index.tsx
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 
 import { Avatar } from '@/components/ui/avatar';
@@ -135,7 +135,7 @@ export default function ProfileScreen() {
       </Card>
 
       <Pressable
-        onPress={signOut}
+        onPress={() => confirmLogout(signOut)}
         style={({ pressed }) => [
           styles.logout,
           { borderColor: theme.danger },
@@ -145,6 +145,17 @@ export default function ProfileScreen() {
         <Text style={[styles.logoutText, { color: theme.danger }]}>Log out</Text>
       </Pressable>
     </Screen>
+  );
+}
+
+function confirmLogout(onConfirm: () => void) {
+  Alert.alert(
+    'Log out',
+    'Are you sure you want to log out?',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log out', style: 'destructive', onPress: onConfirm },
+    ]
   );
 }
 

@@ -1,20 +1,20 @@
 // src/app/(app)/(home)/index.tsx
+import Ionicons from '@react-native-vector-icons/ionicons';
+import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
-import Ionicons from '@react-native-vector-icons/ionicons';
 
-import { Avatar } from '@/components/ui/avatar';
 import { BookingCard } from '@/components/booking-card';
+import { SectionHeader } from '@/components/section-header';
+import { Avatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Screen } from '@/components/ui/screen';
-import { SectionHeader } from '@/components/section-header';
 import { Spacing } from '@/constants/theme';
-import { formatCurrency } from '@/lib/format';
-import { getDashboard, type Booking, type DashboardData, type HistoryBooking, type User } from '@/lib/api';
-import { getUser } from '@/lib/storage';
 import { useTheme } from '@/hooks/use-theme';
+import { getDashboard, type Booking, type DashboardData, type HistoryBooking, type User } from '@/lib/api';
+import { formatCurrency } from '@/lib/format';
+import { getUser } from '@/lib/storage';
 
 const PENDING_COLOR = '#22c55e';
 const NEXTDAY_COLOR = '#3b82f6';

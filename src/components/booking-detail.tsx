@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Spacing } from '@/constants/theme';
 import { formatCurrency, formatDate, formatDateTime, formatTime } from '@/lib/format';
+import { isFutureRide, isRideMissed } from '@/lib/booking-status';
 import { useTheme } from '@/hooks/use-theme';
 import type { Booking, DriverStatus } from '@/lib/api';
 
@@ -38,17 +39,6 @@ const TRANSITIONS: Record<DriverStatus, { value: DriverStatus; label: string }[]
   return acc;
 }, {} as Record<DriverStatus, { value: DriverStatus; label: string }[]>);
 
-// A ride may only be started on its pickup day. Rides scheduled for a future
-// day (e.g. tomorrow) are locked until that day arrives.
-function isFutureRide(pickupDate: string): boolean {
-  const d = new Date(pickupDate);
-  if (Number.isNaN(d.getTime())) return false;
-  const pickupDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return pickupDay.getTime() > today.getTime();
-}
-
 export function BookingDetail({
   booking,
   onUpdate,
@@ -64,6 +54,9 @@ export function BookingDetail({
 }) {
   const theme = useTheme();
   const next = TRANSITIONS[booking.driver_status] ?? [];
+  // Presentational: a ride whose pickup time passed and that was never
+  // completed becomes read-only (no status advance / decline).
+  const missed = isRideMissed(booking);
   // Lock the workflow for rides that haven't started yet but are scheduled for
   // a future day. Once a ride is in progress it always stays actionable.
   const locked = booking.driver_status === 'assigned' && isFutureRide(booking.pickup_date);
@@ -86,7 +79,7 @@ export function BookingDetail({
     <View style={styles.container}>
       <Card>
         <View style={styles.statusRow}>
-          <StatusBadge status={booking.driver_status} />
+          <StatusBadge status={missed ? 'missed' : booking.driver_status} />
           <Text style={[styles.fare, { color: theme.text }]}>
             {formatCurrency(booking.total_fare)}
           </Text>
@@ -159,7 +152,18 @@ export function BookingDetail({
         </Card>
       ) : null}
 
-      {booking.driver_status === 'completed' ? (
+      {missed ? (
+        <Card style={styles.lockedCard}>
+          <View style={[styles.lockedIcon, { backgroundColor: theme.dangerSoft }]}>
+            <Ionicons name="alert-circle-outline" size={22} color={theme.danger} />
+          </View>
+          <Text style={[styles.lockedTitle, { color: theme.text }]}>Ride missed</Text>
+          <Text style={[styles.lockedText, { color: theme.textSecondary }]}>
+            The pickup time for this ride has passed and it was not completed. No further action can
+            be taken.
+          </Text>
+        </Card>
+      ) : booking.driver_status === 'completed' ? (
         <Card>
           <Text style={[styles.done, { color: theme.success }]}>
             This ride is completed. 🎉

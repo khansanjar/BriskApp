@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Spacing } from '@/constants/theme';
 import { formatCurrency, formatDate, formatTime } from '@/lib/format';
+import { isRideMissed } from '@/lib/booking-status';
 import { useTheme } from '@/hooks/use-theme';
 import type { Booking } from '@/lib/api';
 
@@ -38,7 +39,7 @@ export function BookingCard({
               </Text>
             </View>
           </View>
-          <StatusBadge status={booking.driver_status} />
+          <StatusBadge status={isRideMissed(booking) ? 'missed' : booking.driver_status} />
         </View>
 
         <View style={styles.metaRow}>

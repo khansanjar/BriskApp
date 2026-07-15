@@ -103,6 +103,7 @@ export default function RegisterScreen() {
           <View style={styles.half}>
             <TextField
               label="First name"
+              placeholder="John"
               value={form.user_fname}
               onChangeText={(v) => update('user_fname', v)}
               error={errors.user_fname}
@@ -111,6 +112,8 @@ export default function RegisterScreen() {
           <View style={styles.half}>
             <TextField
               label="Last name"
+              placeholder="Smith"
+
               value={form.user_lname}
               onChangeText={(v) => update('user_lname', v)}
               error={errors.user_lname}
