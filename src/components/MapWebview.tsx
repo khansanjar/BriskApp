@@ -1,9 +1,13 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { WebView, WebViewMessageEvent } from "react-native-webview";
+import { WebView, type WebViewMessageEvent } from "react-native-webview";
 
-import { colors, radii, spacing } from "@/constants/theme";
-import { MapWebviewProps } from "@/types/type";
+import { Colors, Spacing } from "@/constants/theme";
+import type { MapWebviewProps } from "@/types/type";
+
+const colors = Colors.light;
+const radii = { lg: 16 };
+const spacing = { lg: Spacing.four, sm: Spacing.two };
 
 export default function MapWebview({
   region,
@@ -47,7 +51,11 @@ export default function MapWebview({
             map = new google.maps.Map(document.getElementById('map'), {
               center: { lat: ${region.latitude}, lng: ${region.longitude} },
               zoom: 12,
-              disableDefaultUI: false,
+              disableDefaultUI: true,
+              mapTypeControl: false,
+              zoomControl: false,
+              streetViewControl: false,
+              fullscreenControl: false,
               gestureHandling: 'auto'
             });
 
@@ -158,7 +166,7 @@ export default function MapWebview({
               googleMarkers['destination'] = new google.maps.Marker({
                 position: destPosition,
                 map: map,
-                title: 'Destination',
+                title: 'Pickup',
                 icon: {
                   path: google.maps.SymbolPath.CIRCLE,
                   scale: 10,
@@ -237,6 +245,7 @@ export default function MapWebview({
           });
 
           window.onload = initMap;
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_READY' }));
         </script>
       </head>
       <body>
@@ -246,19 +255,44 @@ export default function MapWebview({
     `;
   }, [region, markers, directions, userLocation, apiKey]);
 
+  const [mapReady, setMapReady] = useState(false);
+  const payloadRef = useRef({
+    type: "UPDATE_MAP",
+    data: { region, markers, directions, userLocation },
+  });
+
+  // Keep the latest map payload in a ref so we can flush it the moment the
+  // WebView (and Google Maps) is ready, avoiding dropped updates.
+  payloadRef.current = {
+    type: "UPDATE_MAP",
+    data: { region, markers, directions, userLocation },
+  };
+
+  const postLatest = () => {
+    if (webViewRef.current) {
+      webViewRef.current.postMessage(JSON.stringify(payloadRef.current));
+    }
+  };
+
   useEffect(() => {
-    const payload = {
-      type: "UPDATE_MAP",
-      data: { region, markers, directions, userLocation },
-    };
-    console.log("[MapsWebview] Sending UPDATE_MAP to WebView");
-    webViewRef.current?.postMessage(JSON.stringify(payload));
+    if (mapReady) postLatest();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady]);
+
+  useEffect(() => {
+    // Re-flush on any prop change once the map is live.
+    if (mapReady) postLatest();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [region, markers, directions, userLocation]);
 
   const handleMessage = (event: WebViewMessageEvent) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
-      console.log("[MapsWebview] Received message from WebView:", message);
+      if (message.type === "MAP_READY") {
+        setMapReady(true);
+        postLatest();
+        return;
+      }
       if (message.type === "ROUTE_STATUS") {
         onRouteStatusChange?.(message.isValid);
       }
@@ -288,7 +322,7 @@ export default function MapWebview({
       startInLoadingState
       renderLoading={() => (
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors.accent} />
+          <ActivityIndicator size="large" color={colors.brand} />
         </View>
       )}
     />
@@ -323,7 +357,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   stateText: {
-    color: colors.textMuted,
+    color: colors.textSecondary,
     marginTop: spacing.sm,
     textAlign: "center",
   },

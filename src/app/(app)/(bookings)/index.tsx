@@ -13,7 +13,7 @@ import { router } from 'expo-router';
 
 import { BookingCard } from '@/components/booking-card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Spacing } from '@/constants/theme';
+import { Spacing, BottomTabInset } from '@/constants/theme';
 import { getBookings, type Booking, type BookingsType } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -178,5 +178,5 @@ const styles = StyleSheet.create({
   },
   tabPressed: { opacity: 0.7 },
   separator: { height: Spacing.three },
-  list: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six },
+  list: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six + BottomTabInset + Spacing.three },
 });

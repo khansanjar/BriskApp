@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing, BottomTabInset } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 interface ScreenProps {
@@ -73,5 +73,5 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   inner: { flexGrow: 1, width: '100%', alignSelf: 'center' },
   scrollContent: { flexGrow: 1 },
-  padded: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six },
+  padded: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six + BottomTabInset + Spacing.three },
 });

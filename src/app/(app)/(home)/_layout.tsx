@@ -10,17 +10,22 @@ export default function HomeLayout() {
       <Stack.Screen
         name="index"
         options={{
+          headerShown: false,
           title: 'Dashboard',
-          headerLargeTitle: true,
-          headerStyle: { backgroundColor: theme.background },
-          headerTintColor: theme.brand,
-          headerTitleStyle: { color: theme.text, fontWeight: '700' as const },
           contentStyle: { backgroundColor: theme.background },
         }}
       />
       <Stack.Screen
         name="booking/[id]"
-        options={{ title: 'Ride', headerLargeTitle: false, headerBackTitle: 'Back' }}
+        options={{
+          title: 'Ride',
+          headerLargeTitle: false,
+          headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: theme.background },
+          headerTintColor: theme.brand,
+          headerTitleStyle: { color: theme.text, fontWeight: '700' as const },
+          contentStyle: { backgroundColor: theme.background },
+        }}
       />
     </Stack>
   );

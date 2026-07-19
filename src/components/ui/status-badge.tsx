@@ -40,9 +40,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    gap: Spacing.one,
+    gap: 6,
     paddingHorizontal: Spacing.two,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 999,
   },
   dot: {

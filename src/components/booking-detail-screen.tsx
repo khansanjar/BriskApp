@@ -2,7 +2,7 @@
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
-import { Spacing } from '@/constants/theme';
+import { Spacing, BottomTabInset } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useBookingDetail } from '@/hooks/use-booking-detail';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
@@ -64,7 +64,7 @@ export function BookingDetailScreen({ id }: { id: number }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { flexGrow: 1, paddingHorizontal: Spacing.four, paddingVertical: Spacing.four },
+  content: { flexGrow: 1, paddingHorizontal: Spacing.four, paddingVertical: Spacing.four, paddingBottom: Spacing.six + BottomTabInset + Spacing.three },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   message: { fontSize: 15, textAlign: 'center' },
 });

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Spacing } from '@/constants/theme';
-import { formatCurrency, formatDate, formatDateTime, formatTime } from '@/lib/format';
+import { formatCurrency, formatDate, formatDateTime, formatTime, getInitials } from '@/lib/format';
 import { isFutureRide, isRideMissed } from '@/lib/booking-status';
 import { useTheme } from '@/hooks/use-theme';
 import type { Booking, DriverStatus } from '@/lib/api';
@@ -86,7 +86,7 @@ export function BookingDetail({
         </View>
 
         <View style={styles.timeline}>
-          <Point color={theme.brand} label="Pickup" />
+          <Point color={theme.brand} shape="dot" label="Pick up" />
           <Line />
           <View style={styles.locationBlock}>
             <Text style={[styles.location, { color: theme.text }]}>
@@ -94,7 +94,7 @@ export function BookingDetail({
             </Text>
           </View>
           <View style={{ height: 12 }} />
-          <Point color={theme.danger} label="Dropoff" />
+          <Point color={theme.success} shape="square" label="Drop off" />
           <Line />
           <View style={styles.locationBlock}>
             <Text style={[styles.location, { color: theme.text }]}>
@@ -118,20 +118,27 @@ export function BookingDetail({
       </Card>
 
       <Card>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Customer</Text>
         <View style={styles.customerRow}>
+          <View style={[styles.customerAvatar, { backgroundColor: theme.brandSoft }]}>
+            <Text style={[styles.customerInitials, { color: theme.brand }]}>
+              {getInitials(
+                booking.customer?.name?.split(' ')[0] ?? '',
+                booking.customer?.name?.split(' ')[1] ?? ''
+              )}
+            </Text>
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.customerName, { color: theme.text }]}>
               {booking.customer?.name ?? 'Customer'}
             </Text>
-            {booking.customer?.email ? (
-              <Text style={[styles.customerSub, { color: theme.textSecondary }]}>
-                {booking.customer.email}
-              </Text>
-            ) : null}
             {booking.customer?.phone ? (
               <Text style={[styles.customerSub, { color: theme.textSecondary }]}>
                 {booking.customer.phone}
+              </Text>
+            ) : null}
+            {booking.customer?.email ? (
+              <Text style={[styles.customerSub, { color: theme.textSecondary }]}>
+                {booking.customer.email}
               </Text>
             ) : null}
           </View>
@@ -139,9 +146,17 @@ export function BookingDetail({
             <Pressable
               onPress={() => Linking.openURL(`tel:${booking.customer!.phone}`)}
               style={[styles.callButton, { backgroundColor: theme.brandSoft }]}>
-              <Text style={[styles.callText, { color: theme.brand }]}>Call</Text>
+              <Ionicons name="call" size={20} color={theme.brand} />
             </Pressable>
           ) : null}
+        </View>
+        <View style={[styles.customerFareRow, { borderTopColor: theme.border }]}>
+          <Text style={[styles.customerFareLabel, { color: theme.textSecondary }]}>
+            {booking.vehicle_type ?? 'Ride'}
+          </Text>
+          <Text style={[styles.customerFare, { color: theme.text }]}>
+            {formatCurrency(booking.total_fare)}
+          </Text>
         </View>
       </Card>
 
@@ -221,11 +236,17 @@ export function BookingDetail({
   );
 }
 
-function Point({ color, label }: { color: string; label: string }) {
+function Point({ color, shape, label }: { color: string; shape: 'dot' | 'square'; label: string }) {
   const theme = useTheme();
   return (
     <View style={styles.pointRow}>
-      <View style={[styles.point, { backgroundColor: color }]} />
+      <View
+        style={[
+          styles.point,
+          shape === 'square' ? styles.pointSquare : styles.pointDot,
+          { backgroundColor: color },
+        ]}
+      />
       <Text style={[styles.pointLabel, { color: theme.textSecondary }]}>{label}</Text>
     </View>
   );
@@ -261,8 +282,10 @@ const styles = StyleSheet.create({
   fare: { fontSize: 20, fontWeight: 800 },
   timeline: { gap: 2 },
   pointRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  point: { width: 12, height: 12, borderRadius: 6 },
-  pointLabel: { fontSize: 12, fontWeight: 600, textTransform: 'uppercase' },
+  point: { width: 12, height: 12 },
+  pointDot: { width: 12, height: 12, borderRadius: 6 },
+  pointSquare: { width: 12, height: 12, borderRadius: 4 },
+  pointLabel: { fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 },
   line: { height: 16, width: 2, backgroundColor: 'rgba(0,0,0,0.12)', marginLeft: 5 },
   locationBlock: { marginLeft: Spacing.four },
   location: { fontSize: 16, fontWeight: 600, lineHeight: 22 },
@@ -278,9 +301,27 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: 14, fontWeight: 500 },
   rowValue: { fontSize: 14, fontWeight: 600, flexShrink: 1, textAlign: 'right', marginLeft: Spacing.three },
   customerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  customerAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customerInitials: { fontSize: 17, fontWeight: 800 },
   customerName: { fontSize: 16, fontWeight: 700 },
   customerSub: { fontSize: 13, marginTop: 2 },
-  callButton: { paddingHorizontal: Spacing.four, paddingVertical: Spacing.two, borderRadius: 12 },
+  customerFareRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: Spacing.three,
+    paddingTop: Spacing.three,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  customerFareLabel: { fontSize: 14, fontWeight: 600 },
+  customerFare: { fontSize: 18, fontWeight: 800 },
+  callButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   callText: { fontSize: 14, fontWeight: 700 },
   notes: { fontSize: 14, lineHeight: 20 },
   actions: { gap: Spacing.two },

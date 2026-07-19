@@ -1,23 +1,32 @@
 // src/app/(app)/(home)/index.tsx
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState, type ComponentProps } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BookingCard } from '@/components/booking-card';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { RideMap } from '@/components/RideMap';
 import { SectionHeader } from '@/components/section-header';
 import { Avatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Screen } from '@/components/ui/screen';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { getDashboard, type Booking, type DashboardData, type HistoryBooking, type User } from '@/lib/api';
-import { formatCurrency } from '@/lib/format';
+import { getDashboard, type Booking, type DashboardData, type User } from '@/lib/api';
+import { formatCurrency, formatTime } from '@/lib/format';
+import { isRideMissed } from '@/lib/booking-status';
 import { getUser } from '@/lib/storage';
 
-const PENDING_COLOR = '#22c55e';
-const NEXTDAY_COLOR = '#3b82f6';
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
 function dateKey(value: string): string {
   const d = new Date(value);
@@ -34,15 +43,9 @@ function localKey(offsetDays: number): string {
 const todayKey = localKey(0);
 const tomorrowKey = localKey(1);
 
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
-}
-
 export default function DashboardScreen() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const [data, setData] = useState<DashboardData | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -74,198 +77,139 @@ export default function DashboardScreen() {
   const upcoming = data?.upcoming_bookings ?? [];
   const todayRides = upcoming.filter((b) => dateKey(b.pickup_date) === todayKey);
   const nextDayRides = upcoming.filter((b) => dateKey(b.pickup_date) === tomorrowKey);
-  const history = (data?.recent_history ?? []).slice(0, 10);
   const dayEarnings = data?.earnings?.today;
-  const monthEarnings = data?.earnings?.this_month;
+
+  const featured = todayRides[0] ?? nextDayRides[0] ?? null;
+
+  // Next upcoming ride across today + tomorrow, used for the header subtitle.
+  const nextRide = [...todayRides, ...nextDayRides][0] ?? null;
 
   return (
-    <Screen
-      scrollProps={{
-        refreshControl: (
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + Spacing.four }]}
+        refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.brand} />
-        ),
-      }}>
-      {/* Greeting + avatar in a single horizontal row */}
-      <View style={styles.greetingRow}>
-        <View style={styles.greetingCopy}>
-          <Text style={[styles.greetingText, { color: theme.textSecondary }]}>{greeting()}</Text>
-          <Text style={[styles.greetingName, { color: theme.text }]} numberOfLines={1}>
-            Welcome, {user?.user_fname ?? 'Driver'} 👋
-          </Text>
+        }
+        showsVerticalScrollIndicator={false}>
+        {/* Greeting + avatar in a single horizontal row */}
+        <View style={styles.greetingRow}>
+          <View style={styles.greetingCopy}>
+            <Text style={[styles.greetingText, { color: theme.textSecondary }]}>
+              Hi {user?.user_fname ?? 'Driver'} 👋
+            </Text>
+            <Text style={[styles.greetingSub, { color: theme.textSecondary }]}>
+              {nextRide ? `Next ride ${formatTime(nextRide.pickup_time)}` : 'You are online'}
+            </Text>
+          </View>
+          <Avatar
+            firstName={user?.user_fname}
+            lastName={user?.user_lname}
+            photo={user?.profile_photo ?? null}
+            size={48}
+          />
         </View>
-        <Avatar
-          firstName={user?.user_fname}
-          lastName={user?.user_lname}
-          photo={user?.profile_photo ?? null}
-          size={48}
-        />
-      </View>
 
-      {/* Metric cards */}
-      <View style={styles.metrics}>
-        <MetricCard count={todayRides.length} label="Pending rides" color={PENDING_COLOR} />
-        <MetricCard count={nextDayRides.length} label="Next day rides" color={NEXTDAY_COLOR} />
-      </View>
-
-      {/* Earnings — completed rides only */}
-      <SectionHeader title="Earnings" />
-      <View style={styles.earnings}>
+        {/* Earnings — single rounded primary stat card */}
         <EarningsCard
-          label="Today"
-          icon="today-outline"
-          tint={theme.brand}
-          tintSoft={theme.brandSoft}
           amount={dayEarnings?.amount ?? 0}
           rides={dayEarnings?.rides_count ?? 0}
           loading={!data}
         />
-        <EarningsCard
-          label="This month"
-          icon="calendar-outline"
-          tint={theme.success}
-          tintSoft={theme.successSoft}
-          amount={monthEarnings?.amount ?? 0}
-          rides={monthEarnings?.rides_count ?? 0}
-          loading={!data}
-        />
-      </View>
 
-      <SectionHeader title="Today's pending rides" />
+        <SectionHeader title="Upcoming rides" />
 
-      {error && data == null ? (
-        <EmptyState
-          icon="alert-circle-outline"
-          tone="danger"
-          title="Something went wrong"
-          description={error}
-        />
-      ) : !data ? (
-        <ActivityIndicator color={theme.brand} style={{ padding: Spacing.three }} />
-      ) : todayRides.length === 0 ? (
-        <EmptyState
-          compact
-          icon="car-outline"
-          title="No rides today"
-          description="No pending rides scheduled for today."
-        />
-      ) : (
-        todayRides.map((item: Booking) => (
-          <BookingCard key={item.booking_id} booking={item} onPress={() => openBooking(item.booking_id)} />
-        ))
-      )}
+        {error && data == null ? (
+          <EmptyState icon="alert-circle-outline" tone="danger" title="Something went wrong" description={error} />
+        ) : !data ? (
+          <ActivityIndicator color={theme.brand} style={{ padding: Spacing.three }} />
+        ) : featured ? (
+          <UpcomingRideCard booking={featured} onPress={() => openBooking(featured.booking_id)} />
+        ) : (
+          <EmptyState
+            compact
+            icon="car-outline"
+            title="No rides yet"
+            description="Your next assigned ride will appear here."
+          />
+        )}
 
-      <SectionHeader title="Next day's rides" />
+        {/* Gap between the upcoming ride card and the map */}
+        <View style={styles.mapGap} />
 
-      {data && nextDayRides.length === 0 ? (
-        <EmptyState
-          compact
-          icon="calendar-outline"
-          title="Nothing yet"
-          description="Upcoming rides for tomorrow will appear here."
-        />
-      ) : (
-        data &&
-        nextDayRides.map((item: Booking) => (
-          <BookingCard key={item.booking_id} booking={item} onPress={() => openBooking(item.booking_id)} />
-        ))
-      )}
-
-      <SectionHeader title="Recent rides" />
-
-      {data && history.length === 0 ? (
-        <EmptyState
-          compact
-          icon="time-outline"
-          title="No history"
-          description="Your completed rides will show up here."
-        />
-      ) : (
-        data &&
-        history.map((item: HistoryBooking) => (
-          <Pressable
-            key={item.booking_id}
-            onPress={() => openBooking(item.booking_id)}
-            style={({ pressed }) => (pressed ? styles.pressed : null)}>
-            <Card style={styles.historyCard}>
-              <View style={styles.historyRow}>
-                <View style={styles.historyRoute}>
-                  <Text style={[styles.historyLocation, { color: theme.text }]} numberOfLines={1}>
-                    {item.pickup_location}
-                  </Text>
-                  <Text style={[styles.historyLocation, { color: theme.text }]} numberOfLines={1}>
-                    {item.dropoff_location}
-                  </Text>
-                </View>
-                <Text style={[styles.historyFare, { color: theme.text }]}>
-                  {formatCurrency(item.total_fare)}
-                </Text>
-              </View>
-              <View style={styles.historyMetaRow}>
-                <Ionicons name="checkmark-circle" size={14} color={theme.success} />
-                <Text style={[styles.historyMeta, { color: theme.textSecondary }]}>
-                  {item.pickup_date} · Completed
-                </Text>
-              </View>
-            </Card>
-          </Pressable>
-        ))
-      )}
-    </Screen>
-  );
-}
-
-function MetricCard({ count, label, color }: { count: number; label: string; color: string }) {
-  const theme = useTheme();
-  return (
-    <View style={[styles.metricCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-      <Text style={[styles.metricNumber, { color: theme.text }]}>{count}</Text>
-      <View style={styles.metricLabelRow}>
-        <View style={[styles.metricDot, { backgroundColor: color }]} />
-        <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>{label}</Text>
-      </View>
+        {/* Map — full-bleed: touches the bottom and both side edges */}
+        <View style={styles.mapSection}>
+          <RideMap booking={featured} />
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
 function EarningsCard({
-  label,
-  icon,
-  tint,
-  tintSoft,
   amount,
   rides,
+  monthAmount,
+  monthRides,
   loading,
 }: {
-  label: string;
-  icon: 'today-outline' | 'calendar-outline';
-  tint: string;
-  tintSoft: string;
   amount: number;
   rides: number;
+  monthAmount?: number;
+  monthRides?: number;
   loading: boolean;
 }) {
   const theme = useTheme();
   return (
-    <View style={[styles.earningsCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-      <View style={styles.earningsHeader}>
-        <View style={[styles.earningsIcon, { backgroundColor: tintSoft }]}>
-          <Ionicons name={icon} size={16} color={tint} />
-        </View>
-        <Text style={[styles.earningsLabel, { color: theme.textSecondary }]}>{label}</Text>
-      </View>
+    <View style={[styles.earningsCard, { backgroundColor: theme.brand }]}>
       {loading ? (
-        <ActivityIndicator color={theme.brand} style={styles.earningsLoader} />
+        <ActivityIndicator color={theme.brandText} style={styles.earningsLoader} />
       ) : (
-        <>
-          <Text style={[styles.earningsAmount, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>
-            {formatCurrency(amount)}
-          </Text>
-          <Text style={[styles.earningsSub, { color: theme.textSecondary }]}>
-            {rides} completed {rides === 1 ? 'ride' : 'rides'}
-          </Text>
-        </>
+        <View style={styles.earningsColumns}>
+          <View style={styles.earningsCol}>
+            <Text style={[styles.earningsLabel, { color: theme.brandText }]}>Today's earnings</Text>
+            <Text style={[styles.earningsAmount, { color: theme.brandText }]} numberOfLines={1} adjustsFontSizeToFit>
+              {formatCurrency(amount)}
+            </Text>
+          </View>
+          <View style={[styles.earningsDivider, { backgroundColor: theme.brandText }]} />
+          <View style={styles.earningsCol}>
+            <Text style={[styles.earningsLabel, { color: theme.brandText }]}>Rides today</Text>
+            <Text style={[styles.earningsAmount, { color: theme.brandText }]}>{rides}</Text>
+          </View>
+        </View>
       )}
     </View>
+  );
+}
+
+function UpcomingRideCard({ booking, onPress }: { booking: Booking; onPress?: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => (pressed ? styles.pressed : null)}>
+      <Card style={styles.upcomingCard}>
+        <View style={styles.upcomingTop}>
+          <View style={[styles.upcomingIcon, { backgroundColor: theme.brandSoft }]}>
+            <Ionicons name="car-outline" size={22} color={theme.brand} />
+          </View>
+          <View style={styles.upcomingRoute}>
+            <Text style={[styles.upcomingPoint, { color: theme.text }]} numberOfLines={1}>
+              {booking.pickup_location}
+            </Text>
+            <Text style={[styles.upcomingArrow, { color: theme.textSecondary }]}>↓</Text>
+            <Text style={[styles.upcomingPoint, { color: theme.text }]} numberOfLines={1}>
+              {booking.dropoff_location}
+            </Text>
+          </View>
+          <StatusBadge status={isRideMissed(booking) ? 'missed' : booking.driver_status} />
+        </View>
+        <View style={[styles.upcomingMeta, { borderTopColor: theme.border }]}>
+          <Meta icon="time-outline" text={formatTime(booking.pickup_time)} />
+          {booking.vehicle_type ? <Meta icon="car-outline" text={booking.vehicle_type} /> : null}
+        </View>
+      </Card>
+    </Pressable>
   );
 }
 
@@ -274,65 +218,89 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
+    marginTop: Spacing.one,
     marginBottom: Spacing.four,
   },
   greetingCopy: { flex: 1 },
-  greetingText: { fontSize: 14, fontWeight: 500 },
-  greetingName: { fontSize: 24, fontWeight: 800, marginTop: 2 },
+  greetingText: { fontSize: 22, fontWeight: 800 },
+  greetingSub: { fontSize: 14, fontWeight: 500, marginTop: 2 },
 
-  metrics: {
-    flexDirection: 'row',
-    gap: Spacing.three,
-    marginBottom: Spacing.one,
-  },
-  metricCard: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    gap: Spacing.two,
-  },
-  metricNumber: { fontSize: 34, fontWeight: 800, lineHeight: 38 },
-  metricLabelRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  metricDot: { width: 8, height: 8, borderRadius: 4 },
-  metricLabel: { fontSize: 13, fontWeight: 600 },
-
-  earnings: {
-    flexDirection: 'row',
-    gap: Spacing.three,
-  },
   earningsCard: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: Spacing.three,
-    gap: Spacing.two,
+    borderRadius: 20,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    shadowColor: '#3D3796',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  earningsHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  earningsIcon: {
-    width: 28,
-    height: 28,
+  earningsColumns: { flexDirection: 'row', alignItems: 'stretch' },
+  earningsCol: { flex: 1, gap: 4 },
+  earningsDivider: { width: 1, opacity: 0.3, marginHorizontal: Spacing.three },
+  earningsLabel: { fontSize: 13, fontWeight: 600, opacity: 0.85 },
+  earningsAmount: { fontSize: 24, fontWeight: 800, lineHeight: 28 },
+  earningsLoader: { alignSelf: 'flex-start', marginVertical: Spacing.two },
+
+  upcomingCard: { marginBottom: Spacing.three },
+  upcomingTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.three,
+  },
+  upcomingIcon: {
+    width: 44,
+    height: 44,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  earningsLabel: { fontSize: 13, fontWeight: 600 },
-  earningsAmount: { fontSize: 24, fontWeight: 800, marginTop: Spacing.one },
-  earningsSub: { fontSize: 12, fontWeight: 500 },
-  earningsLoader: { alignSelf: 'flex-start', marginVertical: Spacing.two },
+  upcomingRoute: { flex: 1, gap: 2 },
+  upcomingPoint: { fontSize: 15, fontWeight: 700 },
+  upcomingArrow: { fontSize: 12, fontWeight: 700, marginVertical: 2 },
+  upcomingMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.three,
+    marginTop: Spacing.three,
+    paddingTop: Spacing.three,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
 
   pressed: { opacity: 0.92 },
-  historyCard: { marginBottom: Spacing.two },
-  historyRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: Spacing.three,
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metaText: { fontSize: 13, fontWeight: 500 },
+
+  mapSection: {
+    marginTop: 0,
+    marginHorizontal: -Spacing.four,
+    marginBottom: 0,
+    height: 320,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#3D3796',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  historyRoute: { flex: 1, gap: 4 },
-  historyLocation: { fontSize: 15, fontWeight: 600 },
-  historyFare: { fontSize: 16, fontWeight: 800 },
-  historyMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-  historyMeta: { fontSize: 12 },
+  mapGap: { height: Spacing.three },
+
+  root: { flex: 1 },
+  scroll: { flex: 1 },
+  scrollContent: {
+    paddingHorizontal: Spacing.four,
+    paddingBottom: 0,
+  },
 });
+
+function Meta({ icon, text }: { icon: IoniconName; text: string }) {
+  const theme = useTheme();
+  return (
+    <View style={styles.meta}>
+      <Ionicons name={icon} size={14} color={theme.textSecondary} />
+      <Text style={[styles.metaText, { color: theme.textSecondary }]}>{text}</Text>
+    </View>
+  );
+}

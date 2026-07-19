@@ -6,6 +6,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 
 import { router } from 'expo-router';
 import { useThemeMode } from '@/theme/theme-context';
+import { Spacing } from '@/constants/theme';
 import { registerPushToken } from '@/lib/push';
 
 // Remote push was removed from Expo Go in SDK 53+; skip it there so the app
@@ -54,8 +55,30 @@ export default function AppLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
-        tabBarLabelStyle: { fontWeight: '600' },
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          position: 'absolute',
+          bottom: Spacing.three,
+          left: Spacing.four,
+          right: Spacing.four,
+          height: 64,
+          borderRadius: 32,
+          backgroundColor: colors.surface,
+          borderTopColor: 'transparent',
+          borderTopWidth: 0,
+          borderCurve: 'continuous',
+          shadowColor: '#3D3796',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.18,
+          shadowRadius: 16,
+          elevation: 8,
+          paddingBottom: 0,
+        },
+        tabBarItemStyle: {
+          borderRadius: 24,
+          paddingVertical: 8,
+        },
+        tabBarIconStyle: { marginTop: 0 },
       }}>
       <Tabs.Screen
         name="(home)"

@@ -33,9 +33,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 20,
     padding: Spacing.three,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 2,
+    shadowColor: '#3D3796',
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 16,
+    elevation: 4,
   },
 });

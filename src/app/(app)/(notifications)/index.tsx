@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Spacing } from '@/constants/theme';
+import { Spacing, BottomTabInset } from '@/constants/theme';
 import { formatDateTime } from '@/lib/format';
 import { getNotifications, markNotificationRead, type Notification as AppNotification } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
@@ -110,7 +110,7 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { padding: Spacing.four, paddingBottom: Spacing.six },
+  list: { padding: Spacing.four, paddingBottom: Spacing.six + BottomTabInset + Spacing.three },
   listEmpty: { flexGrow: 1, justifyContent: 'center' },
   card: { marginBottom: Spacing.two },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
