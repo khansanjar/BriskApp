@@ -22,6 +22,10 @@ export default function BookingsLayout() {
         name="booking/[id]"
         options={{ title: 'Ride', headerLargeTitle: false, headerBackTitle: 'Back' }}
       />
+      <Stack.Screen
+        name="booking/heading-to-pickup/[id]"
+        options={{ title: 'Heading to Pickup', headerLargeTitle: false, headerBackTitle: 'Back' }}
+      />
     </Stack>
   );
 }

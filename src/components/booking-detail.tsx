@@ -1,13 +1,15 @@
-import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { type ComponentProps } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
 import { formatCurrency, formatDate, formatDateTime, formatTime, getInitials } from '@/lib/format';
-import { isFutureRide, isRideMissed } from '@/lib/booking-status';
+import { isRideMissed } from '@/lib/booking-status';
 import { useTheme } from '@/hooks/use-theme';
 import type { Booking, DriverStatus } from '@/lib/api';
 
@@ -21,6 +23,7 @@ const NEXT_LABEL: Record<DriverStatus, string | null> = {
   arrived: 'Start trip',
   in_progress: 'Complete trip',
   completed: null,
+  canceled: null,
 };
 
 const NEXT_STATE: Record<DriverStatus, DriverStatus | null> = {
@@ -29,6 +32,7 @@ const NEXT_STATE: Record<DriverStatus, DriverStatus | null> = {
   arrived: 'in_progress',
   in_progress: 'completed',
   completed: null,
+  canceled: null,
 };
 
 const TRANSITIONS: Record<DriverStatus, { value: DriverStatus; label: string }[]> = (Object.keys(
@@ -43,36 +47,35 @@ export function BookingDetail({
   booking,
   onUpdate,
   updating,
-  onDecline,
-  declining,
+  onCancel,
+  cancelling,
 }: {
   booking: Booking;
   onUpdate: (status: DriverStatus) => void;
   updating: boolean;
-  onDecline: () => void;
-  declining: boolean;
+  onCancel: (reason?: string) => void;
+  cancelling: boolean;
 }) {
   const theme = useTheme();
   const next = TRANSITIONS[booking.driver_status] ?? [];
-  // Presentational: a ride whose pickup time passed and that was never
-  // completed becomes read-only (no status advance / decline).
   const missed = isRideMissed(booking);
-  // Lock the workflow for rides that haven't started yet but are scheduled for
-  // a future day. Once a ride is in progress it always stays actionable.
-  const locked = booking.driver_status === 'assigned' && isFutureRide(booking.pickup_date);
-  // The driver may decline any today's / upcoming ride before the trip starts.
-  const canDecline =
-    booking.driver_status !== 'in_progress' && booking.driver_status !== 'completed';
 
-  function handleDecline() {
-    Alert.alert(
-      'Decline ride',
-      'Are you sure you want to decline this ride? This action cannot be undone.',
-      [
-        { text: 'Keep ride', style: 'cancel' },
-        { text: 'Decline', style: 'destructive', onPress: onDecline },
-      ]
-    );
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+
+  function handleCancelPress() {
+    setShowCancelConfirm(true);
+  }
+
+  function handleCancelConfirm() {
+    setShowCancelConfirm(false);
+    onCancel(cancelReason.trim() || undefined);
+    setCancelReason('');
+  }
+
+  function handleCancelDismiss() {
+    setShowCancelConfirm(false);
+    setCancelReason('');
   }
 
   return (
@@ -85,23 +88,25 @@ export function BookingDetail({
           </Text>
         </View>
 
-        <View style={styles.timeline}>
-          <Point color={theme.brand} shape="dot" label="Pick up" />
-          <Line />
-          <View style={styles.locationBlock}>
-            <Text style={[styles.location, { color: theme.text }]}>
-              {booking.pickup_location}
-            </Text>
+        {booking.driver_status !== 'assigned' ? (
+          <View style={styles.timeline}>
+            <Point color={theme.brand} shape="dot" label="Pick up" />
+            <Line />
+            <View style={styles.locationBlock}>
+              <Text style={[styles.location, { color: theme.text }]}>
+                {booking.pickup_location}
+              </Text>
+            </View>
+            <View style={{ height: 12 }} />
+            <Point color={theme.success} shape="square" label="Drop off" />
+            <Line />
+            <View style={styles.locationBlock}>
+              <Text style={[styles.location, { color: theme.text }]}>
+                {booking.dropoff_location}
+              </Text>
+            </View>
           </View>
-          <View style={{ height: 12 }} />
-          <Point color={theme.success} shape="square" label="Drop off" />
-          <Line />
-          <View style={styles.locationBlock}>
-            <Text style={[styles.location, { color: theme.text }]}>
-              {booking.dropoff_location}
-            </Text>
-          </View>
-        </View>
+        ) : null}
       </Card>
 
       <Card>
@@ -167,18 +172,7 @@ export function BookingDetail({
         </Card>
       ) : null}
 
-      {missed ? (
-        <Card style={styles.lockedCard}>
-          <View style={[styles.lockedIcon, { backgroundColor: theme.dangerSoft }]}>
-            <Ionicons name="alert-circle-outline" size={22} color={theme.danger} />
-          </View>
-          <Text style={[styles.lockedTitle, { color: theme.text }]}>Ride missed</Text>
-          <Text style={[styles.lockedText, { color: theme.textSecondary }]}>
-            The pickup time for this ride has passed and it was not completed. No further action can
-            be taken.
-          </Text>
-        </Card>
-      ) : booking.driver_status === 'completed' ? (
+      {booking.driver_status === 'completed' ? (
         <Card>
           <Text style={[styles.done, { color: theme.success }]}>
             This ride is completed. 🎉
@@ -186,49 +180,60 @@ export function BookingDetail({
         </Card>
       ) : (
         <View style={styles.actions}>
-          {locked ? (
-            <Card style={styles.lockedCard}>
-              <View style={[styles.lockedIcon, { backgroundColor: theme.warningSoft }]}>
-                <Ionicons name="time-outline" size={22} color={theme.warning} />
-              </View>
-              <Text style={[styles.lockedTitle, { color: theme.text }]}>Not available yet</Text>
-              <Text style={[styles.lockedText, { color: theme.textSecondary }]}>
-                This ride is scheduled for {formatDate(booking.pickup_date)}. You can start it on
-                the pickup day.
-              </Text>
-            </Card>
-          ) : (
-            next.map((item, index) => (
-              <Button
-                key={item.value}
-                title={item.label}
-                variant={index === 0 ? 'primary' : 'secondary'}
-                loading={updating}
-                onPress={() => onUpdate(item.value)}
-                style={next.length > 1 ? styles.actionButton : null}
-              />
-            ))
-          )}
+          {next.map((item, index) => (
+            <Button
+              key={item.value}
+              title={item.label}
+              variant={index === 0 ? 'primary' : 'secondary'}
+              loading={updating}
+              onPress={() => onUpdate(item.value)}
+              style={next.length > 1 ? styles.actionButton : null}
+            />
+          ))}
 
-          {canDecline ? (
-            <Pressable
-              onPress={handleDecline}
-              disabled={declining || updating}
-              style={({ pressed }) => [
-                styles.decline,
-                { borderColor: theme.danger },
-                declining || updating ? styles.declineDisabled : null,
-                pressed && !declining && !updating ? { backgroundColor: theme.dangerSoft } : null,
-              ]}>
-              {declining ? (
-                <ActivityIndicator color={theme.danger} />
-              ) : (
-                <>
-                  <Ionicons name="close-circle-outline" size={20} color={theme.danger} />
-                  <Text style={[styles.declineText, { color: theme.danger }]}>Decline ride</Text>
-                </>
-              )}
-            </Pressable>
+          {booking.driver_status === 'assigned' && !showCancelConfirm ? (
+            <Button
+              title="Cancel Ride"
+              variant="destructive"
+              loading={cancelling}
+              disabled={updating || cancelling}
+              onPress={handleCancelPress}
+            />
+          ) : null}
+
+          {showCancelConfirm ? (
+            <Card style={styles.cancelConfirmCard}>
+              <View style={[styles.cancelIcon, { backgroundColor: theme.dangerSoft }]}>
+                <Ionicons name="alert-circle-outline" size={26} color={theme.danger} />
+              </View>
+              <Text style={[styles.cancelConfirmTitle, { color: theme.danger }]}>Cancel this ride?</Text>
+              <Text style={[styles.cancelConfirmText, { color: theme.textSecondary }]}>
+                This action cannot be undone. The customer will be notified.
+              </Text>
+              <TextField
+                label="Reason (optional)"
+                placeholder="Why are you cancelling?"
+                value={cancelReason}
+                onChangeText={setCancelReason}
+                containerStyle={styles.cancelReasonField}
+              />
+              <View style={styles.cancelConfirmActions}>
+                <Button
+                  title="Keep ride"
+                  variant="secondary"
+                  onPress={handleCancelDismiss}
+                  disabled={cancelling}
+                />
+                <View style={styles.cancelConfirmActionGap} />
+                <Button
+                  title="Yes, cancel ride"
+                  variant="destructive"
+                  loading={cancelling}
+                  disabled={updating || cancelling}
+                  onPress={handleCancelConfirm}
+                />
+              </View>
+            </Card>
           ) : null}
         </View>
       )}
@@ -326,28 +331,19 @@ const styles = StyleSheet.create({
   notes: { fontSize: 14, lineHeight: 20 },
   actions: { gap: Spacing.two },
   actionButton: { marginBottom: 0 },
-  decline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    marginTop: Spacing.one,
-  },
-  declineText: { fontSize: 16, fontWeight: 700 },
-  declineDisabled: { opacity: 0.6 },
-  lockedCard: { alignItems: 'center', gap: Spacing.two },
-  lockedIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  done: { fontSize: 15, fontWeight: 700, textAlign: 'center' },
+  cancelConfirmCard: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.four },
+  cancelIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.one,
   },
-  lockedTitle: { fontSize: 16, fontWeight: 700 },
-  lockedText: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
-  done: { fontSize: 15, fontWeight: 700, textAlign: 'center' },
+  cancelConfirmTitle: { fontSize: 18, fontWeight: 800 },
+  cancelConfirmText: { fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  cancelReasonField: { marginTop: Spacing.two, width: '100%' },
+  cancelConfirmActions: { flexDirection: 'row', marginTop: Spacing.three, width: '100%', justifyContent: 'center' },
+  cancelConfirmActionGap: { width: Spacing.two },
 });

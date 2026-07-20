@@ -14,7 +14,8 @@ export type DriverStatus =
   | 'heading_to_pickup'
   | 'arrived'
   | 'in_progress'
-  | 'completed';
+  | 'completed'
+  | 'canceled';
 
 export type BookingsType = 'upcoming' | 'history' | 'all';
 
@@ -44,6 +45,10 @@ export interface Booking {
   order_id: string;
   pickup_location: string;
   dropoff_location: string;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
+  dropoff_latitude: number | null;
+  dropoff_longitude: number | null;
   pickup_date: string;
   pickup_time: string;
   vehicle_type: string | null;
@@ -60,10 +65,29 @@ export interface HistoryBooking {
   booking_id: number;
   pickup_location: string;
   dropoff_location: string;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
+  dropoff_latitude: number | null;
+  dropoff_longitude: number | null;
   pickup_date: string;
   completed_at: string;
   total_fare: number;
   customer?: Customer;
+}
+
+function normalizeBookingCoords<T extends {
+  pickup_latitude?: string | number | null;
+  pickup_longitude?: string | number | null;
+  dropoff_latitude?: string | number | null;
+  dropoff_longitude?: string | number | null;
+}>(booking: T): T {
+  return {
+    ...booking,
+    pickup_latitude: booking.pickup_latitude != null ? Number(booking.pickup_latitude) : null,
+    pickup_longitude: booking.pickup_longitude != null ? Number(booking.pickup_longitude) : null,
+    dropoff_latitude: booking.dropoff_latitude != null ? Number(booking.dropoff_latitude) : null,
+    dropoff_longitude: booking.dropoff_longitude != null ? Number(booking.dropoff_longitude) : null,
+  };
 }
 
 export interface DashboardData {
@@ -264,7 +288,12 @@ export async function loginWithApple(payload: AppleLoginPayload): Promise<LoginR
 /* ------------------------------------------------------------------ */
 
 export async function getDashboard(): Promise<DashboardData> {
-  return request<DashboardData>('/dashboard');
+  const data = await request<DashboardData>('/dashboard');
+  return {
+    ...data,
+    upcoming_bookings: data.upcoming_bookings.map(normalizeBookingCoords),
+    recent_history: data.recent_history.map(normalizeBookingCoords),
+  };
 }
 
 export async function getBookings(params: {
@@ -277,11 +306,16 @@ export async function getBookings(params: {
   if (params.page) search.set('page', String(params.page));
   if (params.limit) search.set('limit', String(params.limit));
   const query = search.toString();
-  return request<BookingListResponse>(`/bookings${query ? `?${query}` : ''}`);
+  const data = await request<BookingListResponse>(`/bookings${query ? `?${query}` : ''}`);
+  return {
+    ...data,
+    bookings: data.bookings.map(normalizeBookingCoords),
+  };
 }
 
 export async function getBooking(id: number | string): Promise<Booking> {
-  return request<Booking>(`/booking/${id}`);
+  const data = await request<Booking>(`/booking/${id}`);
+  return normalizeBookingCoords(data);
 }
 
 export async function updateBookingStatus(
@@ -299,6 +333,23 @@ export async function updateBookingStatus(
   return request(`/booking/${id}/status`, {
     method: 'PUT',
     body: payload,
+  });
+}
+
+export interface CancelBookingResponse {
+  driver_status: 'canceled';
+  ride_status: number;
+  customer_notified: boolean;
+  admin_notified: boolean;
+}
+
+export async function cancelBooking(
+  id: number | string,
+  reason?: string
+): Promise<CancelBookingResponse> {
+  return request<CancelBookingResponse>(`/booking/${id}/cancel`, {
+    method: 'PUT',
+    body: reason ? { reason } : {},
   });
 }
 

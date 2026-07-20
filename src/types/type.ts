@@ -22,11 +22,3 @@ export interface MapDirections {
   strokeColor?: string;
   strokeWidth?: number;
 }
-
-export interface MapWebviewProps {
-  region: MapRegion;
-  markers?: MapMarker[];
-  directions?: MapDirections | null;
-  userLocation?: MapPoint | null;
-  onRouteStatusChange?: (isValid: boolean) => void;
-}

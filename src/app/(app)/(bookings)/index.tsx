@@ -67,7 +67,7 @@ export default function BookingsListScreen() {
     try {
       await load(tab, 1, false);
     } catch {
-      /* surface error via list */
+      /* surface via list */
     } finally {
       setRefreshing(false);
     }
@@ -92,6 +92,8 @@ export default function BookingsListScreen() {
   const renderItem = ({ item }: { item: Booking }) => (
     <BookingCard booking={item} onPress={() => openBooking(item.booking_id)} />
   );
+
+  const displayItems = items;
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
@@ -125,7 +127,7 @@ export default function BookingsListScreen() {
       <FlatList
         style={{ flex: 1 }}
         contentContainerStyle={styles.list}
-        data={items}
+        data={displayItems}
         keyExtractor={(item) => String(item.booking_id)}
         renderItem={renderItem}
         ItemSeparatorComponent={() => <View style={styles.separator} />}

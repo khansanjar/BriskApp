@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import {
-  declineBooking,
+  cancelBooking,
   getBooking,
   updateBookingStatus,
   type Booking,
@@ -13,7 +13,7 @@ export function useBookingDetail(id: number) {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [declining, setDeclining] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -49,18 +49,21 @@ export function useBookingDetail(id: number) {
     [id, load]
   );
 
-  const decline = useCallback(
+  const cancel = useCallback(
     async (reason?: string) => {
-      setDeclining(true);
+      setCancelling(true);
       setError(null);
       try {
-        await declineBooking(id, reason);
+        await cancelBooking(id, reason);
+        await load();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Could not cancel ride.');
       } finally {
-        setDeclining(false);
+        setCancelling(false);
       }
     },
-    [id]
+    [id, load]
   );
 
-  return { booking, loading, updating, declining, error, reload: load, update, decline };
+  return { booking, loading, updating, cancelling, error, reload: load, update, cancel };
 }

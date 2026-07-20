@@ -84,28 +84,36 @@ export default function AppLayout() {
         name="(home)"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" color={color} size={size} />,
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} color={color} size={focused ? size + 2 : size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="(bookings)"
         options={{
           title: 'Rides',
-          tabBarIcon: ({ color, size }) => <Ionicons name="car" color={color} size={size} />,
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'car' : 'car-outline'} color={color} size={focused ? size + 2 : size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="(notifications)"
         options={{
           title: 'Alerts',
-          tabBarIcon: ({ color, size }) => <Ionicons name="notifications" color={color} size={size} />,
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'notifications' : 'notifications-outline'} color={color} size={focused ? size + 2 : size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="(profile)"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" color={color} size={size} />,
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} color={color} size={focused ? size + 2 : size} />
+          ),
         }}
       />
     </Tabs>

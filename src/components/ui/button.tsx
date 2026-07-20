@@ -22,8 +22,8 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
   const borderColor = variant === 'secondary' ? theme.border : bg;
   const textColor = variant === 'secondary' ? theme.text : theme.brandText;
 
-  const isPrimary = variant === 'primary';
-  const shadowColor = isPrimary ? (variant === 'primary' ? theme.brand : theme.danger) : 'transparent';
+  const isAction = variant === 'primary' || variant === 'destructive';
+  const shadow = variant === 'primary' ? theme.brand : variant === 'destructive' ? theme.danger : 'transparent';
 
   return (
     <Pressable
@@ -34,11 +34,11 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
         {
           backgroundColor: bg,
           borderColor,
-          shadowColor,
-          shadowOpacity: isPrimary && !disabled && !loading ? 0.25 : 0,
+          shadowColor: shadow,
+          shadowOpacity: isAction && !disabled && !loading ? 0.25 : 0,
           shadowOffset: { width: 0, height: 4 },
           shadowRadius: 12,
-          elevation: isPrimary && !disabled && !loading ? 4 : 0,
+          elevation: isAction && !disabled && !loading ? 4 : 0,
         },
         disabled || loading ? styles.disabled : null,
         pressed && !disabled && !loading ? styles.pressed : null,
@@ -58,6 +58,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.four,
     alignItems: 'center',
     justifyContent: 'center',
   },

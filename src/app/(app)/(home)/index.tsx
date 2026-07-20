@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -41,7 +42,6 @@ function localKey(offsetDays: number): string {
 }
 
 const todayKey = localKey(0);
-const tomorrowKey = localKey(1);
 
 export default function DashboardScreen() {
   const theme = useTheme();
@@ -50,6 +50,7 @@ export default function DashboardScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAllRides, setShowAllRides] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -76,13 +77,12 @@ export default function DashboardScreen() {
 
   const upcoming = data?.upcoming_bookings ?? [];
   const todayRides = upcoming.filter((b) => dateKey(b.pickup_date) === todayKey);
-  const nextDayRides = upcoming.filter((b) => dateKey(b.pickup_date) === tomorrowKey);
   const dayEarnings = data?.earnings?.today;
 
-  const featured = todayRides[0] ?? nextDayRides[0] ?? null;
+  const featured = todayRides[0] ?? null;
 
-  // Next upcoming ride across today + tomorrow, used for the header subtitle.
-  const nextRide = [...todayRides, ...nextDayRides][0] ?? null;
+  // Next upcoming ride for the header subtitle.
+  const nextRide = todayRides[0] ?? null;
 
   return (
     <View style={styles.root}>
@@ -118,7 +118,7 @@ export default function DashboardScreen() {
           loading={!data}
         />
 
-        <SectionHeader title="Upcoming rides" />
+        <SectionHeader title="Upcoming rides" action="View All" onAction={() => setShowAllRides(true)} />
 
         {error && data == null ? (
           <EmptyState icon="alert-circle-outline" tone="danger" title="Something went wrong" description={error} />
@@ -143,6 +143,58 @@ export default function DashboardScreen() {
           <RideMap booking={featured} />
         </View>
       </ScrollView>
+
+      {/* Modal: all rides for the current day */}
+      <Modal visible={showAllRides} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: theme.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Today's rides</Text>
+              <Pressable onPress={() => setShowAllRides(false)} hitSlop={8}>
+                <View style={[styles.modalClose, { backgroundColor: theme.backgroundElement }]}>
+                  <Ionicons name="close" size={20} color={theme.text} />
+                </View>
+              </Pressable>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {todayRides.length === 0 ? (
+                <EmptyState compact icon="car-outline" title="No rides" description="No rides scheduled for today." />
+              ) : (
+                <View style={styles.modalList}>
+                  {todayRides.map((item) => (
+                    <Pressable
+                      key={item.booking_id}
+                      onPress={() => {
+                        setShowAllRides(false);
+                        openBooking(item.booking_id);
+                      }}
+                      style={({ pressed }) => (pressed ? styles.pressed : null)}>
+                      <Card style={styles.modalItem}>
+                        <View style={styles.modalItemTop}>
+                          <View style={styles.modalItemRoute}>
+                            <Text style={[styles.modalItemPoint, { color: theme.text }]} numberOfLines={1}>
+                              {item.pickup_location}
+                            </Text>
+                            <Text style={[styles.modalItemArrow, { color: theme.textSecondary }]}>↓</Text>
+                            <Text style={[styles.modalItemPoint, { color: theme.text }]} numberOfLines={1}>
+                              {item.dropoff_location}
+                            </Text>
+                          </View>
+                          <StatusBadge status={isRideMissed(item) ? 'missed' : item.driver_status} />
+                        </View>
+                        <View style={[styles.modalItemMeta, { borderTopColor: theme.border }]}>
+                          <Meta icon="time-outline" text={formatTime(item.pickup_time)} />
+                          {item.vehicle_type ? <Meta icon="car-outline" text={item.vehicle_type} /> : null}
+                        </View>
+                      </Card>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -273,17 +325,18 @@ const styles = StyleSheet.create({
 
   mapSection: {
     marginTop: 0,
-    marginHorizontal: -Spacing.four,
+    marginHorizontal: 0,
     marginBottom: 0,
     height: 320,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#3D3796',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 20,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(61, 55, 150, 0.12)',
   },
   mapGap: { height: Spacing.three },
 
@@ -292,6 +345,51 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.four,
     paddingBottom: 0,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(21, 19, 43, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.six,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.three,
+  },
+  modalTitle: { fontSize: 20, fontWeight: 800 },
+  modalClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalList: { gap: Spacing.three },
+  modalItem: { marginBottom: 0 },
+  modalItemTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.three,
+  },
+  modalItemRoute: { flex: 1, gap: 2 },
+  modalItemPoint: { fontSize: 15, fontWeight: 700 },
+  modalItemArrow: { fontSize: 12, fontWeight: 700, marginVertical: 2 },
+  modalItemMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.three,
+    marginTop: Spacing.three,
+    paddingTop: Spacing.three,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
 });
 

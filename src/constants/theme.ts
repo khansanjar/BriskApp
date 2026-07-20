@@ -94,5 +94,6 @@ export const DriverStatusMeta: Record<
   arrived: { label: 'Arrived', tone: 'warning' },
   in_progress: { label: 'In progress', tone: 'success' },
   completed: { label: 'Completed', tone: 'success' },
+  canceled: { label: 'Canceled', tone: 'danger' },
   missed: { label: 'Missed', tone: 'danger' },
 };
