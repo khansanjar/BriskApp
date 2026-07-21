@@ -1,4 +1,4 @@
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View, Modal } from 'react-native';
 import { useState } from 'react';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { type ComponentProps } from 'react';
@@ -202,38 +202,42 @@ export function BookingDetail({
           ) : null}
 
           {showCancelConfirm ? (
-            <Card style={styles.cancelConfirmCard}>
-              <View style={[styles.cancelIcon, { backgroundColor: theme.dangerSoft }]}>
-                <Ionicons name="alert-circle-outline" size={26} color={theme.danger} />
+            <Modal visible={showCancelConfirm} animationType="fade" transparent>
+              <View style={styles.modalOverlay}>
+                <View style={[styles.cancelConfirmCard, { backgroundColor: theme.surface }]}>
+                  <View style={[styles.cancelIcon, { backgroundColor: theme.dangerSoft }]}>
+                    <Ionicons name="alert-circle-outline" size={26} color={theme.danger} />
+                  </View>
+                  <Text style={[styles.cancelConfirmTitle, { color: theme.text }]}>Cancel this ride?</Text>
+                  <Text style={[styles.cancelConfirmText, { color: theme.textSecondary }]}>
+                    This action cannot be undone. The customer will be notified.
+                  </Text>
+                  <TextField
+                    label="Reason (optional)"
+                    placeholder="Why are you cancelling?"
+                    value={cancelReason}
+                    onChangeText={setCancelReason}
+                    containerStyle={styles.cancelReasonField}
+                  />
+                  <View style={styles.cancelConfirmActions}>
+                    <Button
+                      title="Keep ride"
+                      variant="secondary"
+                      onPress={handleCancelDismiss}
+                      disabled={cancelling}
+                    />
+                    <View style={styles.cancelConfirmActionGap} />
+                    <Button
+                      title="Yes, cancel ride"
+                      variant="destructive"
+                      loading={cancelling}
+                      disabled={updating || cancelling}
+                      onPress={handleCancelConfirm}
+                    />
+                  </View>
+                </View>
               </View>
-              <Text style={[styles.cancelConfirmTitle, { color: theme.danger }]}>Cancel this ride?</Text>
-              <Text style={[styles.cancelConfirmText, { color: theme.textSecondary }]}>
-                This action cannot be undone. The customer will be notified.
-              </Text>
-              <TextField
-                label="Reason (optional)"
-                placeholder="Why are you cancelling?"
-                value={cancelReason}
-                onChangeText={setCancelReason}
-                containerStyle={styles.cancelReasonField}
-              />
-              <View style={styles.cancelConfirmActions}>
-                <Button
-                  title="Keep ride"
-                  variant="secondary"
-                  onPress={handleCancelDismiss}
-                  disabled={cancelling}
-                />
-                <View style={styles.cancelConfirmActionGap} />
-                <Button
-                  title="Yes, cancel ride"
-                  variant="destructive"
-                  loading={cancelling}
-                  disabled={updating || cancelling}
-                  onPress={handleCancelConfirm}
-                />
-              </View>
-            </Card>
+            </Modal>
           ) : null}
         </View>
       )}
@@ -332,7 +336,7 @@ const styles = StyleSheet.create({
   actions: { gap: Spacing.two },
   actionButton: { marginBottom: 0 },
   done: { fontSize: 15, fontWeight: 700, textAlign: 'center' },
-  cancelConfirmCard: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.four },
+  cancelConfirmCard: { alignItems: 'center', gap: Spacing.two, padding: Spacing.four, borderRadius: 20, width: '85%', maxWidth: 400 },
   cancelIcon: {
     width: 52,
     height: 52,
@@ -346,4 +350,10 @@ const styles = StyleSheet.create({
   cancelReasonField: { marginTop: Spacing.two, width: '100%' },
   cancelConfirmActions: { flexDirection: 'row', marginTop: Spacing.three, width: '100%', justifyContent: 'center' },
   cancelConfirmActionGap: { width: Spacing.two },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

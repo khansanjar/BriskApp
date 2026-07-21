@@ -1,22 +1,24 @@
 // src/components/booking-detail-screen.tsx
+import { router } from 'expo-router';
 import { useCallback } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
 
-import { Spacing, BottomTabInset } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { useBookingDetail } from '@/hooks/use-booking-detail';
-import { useLocationTracking } from '@/hooks/useLocationTracking';
-import { type Booking, type DriverStatus, updateBookingStatus } from '@/lib/api';
 import { ActiveRideScreen, type RideDetails, type RideStatus } from '@/components/ActiveRideScreen';
-import { HeadingToPickupScreen } from '@/components/heading-to-pickup-screen';
 import { BookingDetail } from '@/components/booking-detail';
+import { HeadingToPickupScreen } from '@/components/heading-to-pickup-screen';
+import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useBookingCoordinates } from '@/hooks/use-booking-coordinates';
+import { useBookingDetail } from '@/hooks/use-booking-detail';
+import { useTheme } from '@/hooks/use-theme';
+import { useLocationTracking } from '@/hooks/useLocationTracking';
+import { type Booking, type DriverStatus } from '@/lib/api';
 
 const FALLBACK_COORDINATES = { latitude: 40.4168, longitude: -3.7038 };
 
 export function BookingDetailScreen({ id }: { id: number }) {
   const theme = useTheme();
   const { booking, loading, updating, cancelling, error, update, cancel } = useBookingDetail(id);
+  const { pickup: geocodedPickup, dropoff: geocodedDropoff } = useBookingCoordinates(booking);
 
   useLocationTracking(booking?.booking_id ?? null, booking?.driver_status ?? null);
 
@@ -38,21 +40,16 @@ export function BookingDetailScreen({ id }: { id: number }) {
 
   const handleUpdate = useCallback(
     async (status: DriverStatus) => {
-      if (status === 'heading_to_pickup') {
-        try {
-          await updateBookingStatus(id, { status });
-          router.replace(`/(app)/(bookings)/booking/heading-to-pickup/${id}`);
-        } catch (e) {
-          Alert.alert(
-            'Could not update status',
-            e instanceof Error ? e.message : 'Please try again.'
-          );
-        }
-      } else {
-        update(status);
+      try {
+        await update(status);
+      } catch (e) {
+        Alert.alert(
+          'Could not update status',
+          e instanceof Error ? e.message : 'Please try again.'
+        );
       }
     },
-    [id, update, router]
+    [update]
   );
 
   if (loading) {
@@ -73,14 +70,12 @@ export function BookingDetailScreen({ id }: { id: number }) {
     );
   }
 
-  const activeStatuses: DriverStatus[] = ['assigned', 'heading_to_pickup', 'arrived', 'in_progress'];
-
   if (booking.driver_status === 'heading_to_pickup') {
     return <HeadingToPickupScreen bookingId={booking.booking_id} />;
   }
 
-  if (['assigned', 'arrived', 'in_progress'].includes(booking.driver_status)) {
-    const rideDetails = buildRideDetails(booking);
+  if (['arrived', 'in_progress'].includes(booking.driver_status)) {
+    const rideDetails = buildRideDetails(booking, geocodedPickup, geocodedDropoff);
     const initialStatus = mapStatusToRideStatus(booking.driver_status);
 
     return (
@@ -109,18 +104,22 @@ export function BookingDetailScreen({ id }: { id: number }) {
   );
 }
 
-function buildRideDetails(booking: Booking): RideDetails {
+function buildRideDetails(
+  booking: Booking,
+  geocodedPickup: { latitude: number; longitude: number } | null,
+  geocodedDropoff: { latitude: number; longitude: number } | null,
+): RideDetails {
   const fallback = FALLBACK_COORDINATES;
   return {
     driverLocation: fallback,
     pickupLocation: {
-      latitude: booking.pickup_latitude ?? fallback.latitude,
-      longitude: booking.pickup_longitude ?? fallback.longitude,
+      latitude: geocodedPickup?.latitude ?? booking.pickup_latitude ?? fallback.latitude,
+      longitude: geocodedPickup?.longitude ?? booking.pickup_longitude ?? fallback.longitude,
       address: booking.pickup_location,
     },
     dropoffLocation: {
-      latitude: booking.dropoff_latitude ?? fallback.latitude,
-      longitude: booking.dropoff_longitude ?? fallback.longitude,
+      latitude: geocodedDropoff?.latitude ?? booking.dropoff_latitude ?? fallback.latitude,
+      longitude: geocodedDropoff?.longitude ?? booking.dropoff_longitude ?? fallback.longitude,
       address: booking.dropoff_location,
     },
     customer: {

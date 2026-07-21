@@ -8,14 +8,10 @@ import { useBookingCoordinates } from '@/hooks/use-booking-coordinates';
 import type { Booking } from '@/lib/api';
 import { useThemeMode } from '@/theme/theme-context';
 
-const DEFAULT_REGION = {
-  latitude: 40.4168,
-  longitude: -3.7038,
-  latitudeDelta: 0.0922,
-  longitudeDelta: 0.0421,
-};
-
 const GOOGLE_DIRECTIONS_URL = 'https://maps.googleapis.com/maps/api/directions/json';
+
+// Statuses where the route should point at the DROPOFF instead of the pickup.
+const DROPOFF_PHASE_STATUSES = ['arrived', 'in_progress'];
 
 function decodePolyline(encoded: string) {
   const points: { latitude: number; longitude: number }[] = [];
@@ -64,6 +60,10 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
   const watchRef = useRef<Location.LocationSubscription | null>(null);
   const { pickup, dropoff } = useBookingCoordinates(booking);
 
+  // Which leg of the trip are we on? Drives both the destination and the marker/route styling.
+  const isDropoffPhase = booking?.driver_status ? DROPOFF_PHASE_STATUSES.includes(booking.driver_status) : false;
+  const destination = isDropoffPhase ? dropoff : pickup;
+
   useEffect(() => {
     let active = true;
 
@@ -76,12 +76,10 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
       try {
         const initial = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
         if (active) {
-          const coords = { latitude: initial.coords.latitude, longitude: initial.coords.longitude };
-          console.log('[RideMap] Initial driver location:', coords);
-          setDriver(coords);
+          setDriver({ latitude: initial.coords.latitude, longitude: initial.coords.longitude });
         }
-      } catch (err) {
-        console.log('[RideMap] Initial location error:', err);
+      } catch {
+        // Live watch below will populate this shortly; nothing to fall back to here.
       }
 
       watchRef.current = await Location.watchPositionAsync(
@@ -89,9 +87,7 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
         (loc) => {
           if (loc.coords.latitude === 0 && loc.coords.longitude === 0) return;
           if (active) {
-            const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-            console.log('[RideMap] Driver location update:', coords);
-            setDriver(coords);
+            setDriver({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
             setError(null);
           }
         }
@@ -109,7 +105,7 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
     let cancelled = false;
 
     async function fetchRoute() {
-      if (!driver || !pickup) {
+      if (!driver || !destination) {
         setRouteCoords([]);
         setRouteUnavailable(false);
         return;
@@ -122,7 +118,7 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
       }
 
       try {
-        const url = `${GOOGLE_DIRECTIONS_URL}?origin=${driver.latitude},${driver.longitude}&destination=${pickup.latitude},${pickup.longitude}&key=${apiKey}`;
+        const url = `${GOOGLE_DIRECTIONS_URL}?origin=${driver.latitude},${driver.longitude}&destination=${destination.latitude},${destination.longitude}&key=${apiKey}`;
         const res = await fetch(url);
         const data = await res.json();
 
@@ -135,8 +131,7 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
           setRouteCoords([]);
           setRouteUnavailable(true);
         }
-      } catch (err) {
-        console.log('[RideMap] Directions fetch error:', err);
+      } catch {
         if (!cancelled) {
           setRouteCoords([]);
           setRouteUnavailable(true);
@@ -149,43 +144,26 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
     return () => {
       cancelled = true;
     };
-  }, [driver, pickup]);
+    // Use primitives, not object refs, so this doesn't re-fire on every render
+    // just because useBookingCoordinates returned a new object identity.
+  }, [driver?.latitude, driver?.longitude, destination?.latitude, destination?.longitude]);
 
   const region = useMemo(() => {
     if (driver) {
-      return {
-        latitude: driver.latitude,
-        longitude: driver.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      };
+      return { latitude: driver.latitude, longitude: driver.longitude, latitudeDelta: 0.0922, longitudeDelta: 0.0421 };
     }
-    return DEFAULT_REGION;
-  }, [driver]);
+    if (destination) {
+      return { latitude: destination.latitude, longitude: destination.longitude, latitudeDelta: 0.0922, longitudeDelta: 0.0421 };
+    }
+    // No hardcoded fallback location — if we truly have nothing yet, don't render a region at all.
+    return null;
+  }, [driver, destination]);
 
   const brand = resolvedScheme === 'dark' ? '#7C74E0' : '#3D3796';
 
   const markers = [
-    ...(pickup
-      ? [
-          {
-            id: booking?.booking_id ?? 'pickup',
-            latitude: pickup.latitude,
-            longitude: pickup.longitude,
-            title: 'Pickup',
-          },
-        ]
-      : []),
-    ...(dropoff
-      ? [
-          {
-            id: `${booking?.booking_id ?? 'dropoff'}-dropoff`,
-            latitude: dropoff.latitude,
-            longitude: dropoff.longitude,
-            title: 'Dropoff',
-          },
-        ]
-      : []),
+    ...(pickup ? [{ id: booking?.booking_id ?? 'pickup', latitude: pickup.latitude, longitude: pickup.longitude, title: 'Pickup' }] : []),
+    ...(dropoff ? [{ id: `${booking?.booking_id ?? 'dropoff'}-dropoff`, latitude: dropoff.latitude, longitude: dropoff.longitude, title: 'Dropoff' }] : []),
   ];
 
   if (error) {
@@ -194,6 +172,16 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
         <Text style={[styles.fallbackText, { color: Colors[resolvedScheme].textSecondary }]}>
           {error} Map unavailable.
         </Text>
+      </View>
+    );
+  }
+
+  if (!region) {
+    return (
+      <View style={styles.fullscreen}>
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={brand} />
+        </View>
       </View>
     );
   }
@@ -213,16 +201,12 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
             key={marker.id}
             coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
             title={marker.title}
-            pinColor={marker.title === 'Pickup' ? '#FF4444' : marker.title === 'Dropoff' ? '#3D3796' : undefined}
+            pinColor={marker.title === 'Pickup' ? '#FF4444' : '#3D3796'}
           />
         ))}
 
         {driver && (
-          <Marker
-            coordinate={{ latitude: driver.latitude, longitude: driver.longitude }}
-            title="Your location"
-            description="Current position"
-          >
+          <Marker coordinate={{ latitude: driver.latitude, longitude: driver.longitude }} title="Your location" description="Current position">
             <View style={styles.userMarker}>
               <View style={[styles.userMarkerDot, { backgroundColor: brand }]} />
             </View>
@@ -230,11 +214,7 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
         )}
 
         {routeCoords.length > 0 && (
-          <Polyline
-            coordinates={routeCoords}
-            strokeColor={brand}
-            strokeWidth={5}
-          />
+          <Polyline coordinates={routeCoords} strokeColor={brand} strokeWidth={5} />
         )}
       </MapView>
 
@@ -247,7 +227,7 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
       {routeUnavailable ? (
         <View style={[styles.routeBanner, { backgroundColor: Colors[resolvedScheme].surface }]}>
           <Text style={[styles.routeBannerText, { color: Colors[resolvedScheme].textSecondary }]}>
-            Route unavailable — showing pickup location only
+            Route unavailable — showing {isDropoffPhase ? 'dropoff' : 'pickup'} location only
           </Text>
         </View>
       ) : null}
@@ -256,57 +236,16 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
 }
 
 const styles = StyleSheet.create({
-  fullscreen: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  map: {
-    flex: 1,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.04)',
-  },
-  fallback: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.four,
-  },
-  fallbackText: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
+  fullscreen: { flex: 1, width: '100%', height: '100%' },
+  map: { flex: 1, borderRadius: 16, overflow: 'hidden' },
+  loadingOverlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.04)' },
+  fallback: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
+  fallbackText: { fontSize: 14, textAlign: 'center' },
   routeBanner: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    right: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(61, 55, 150, 0.15)',
+    position: 'absolute', top: 12, left: 12, right: 12, paddingVertical: 8, paddingHorizontal: 12,
+    borderRadius: 10, borderWidth: 1, borderColor: 'rgba(61, 55, 150, 0.15)',
   },
-  routeBannerText: {
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  userMarker: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  userMarkerDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 3,
-    borderColor: '#ffffff',
-  },
+  routeBannerText: { fontSize: 12, fontWeight: '600', textAlign: 'center' },
+  userMarker: { alignItems: 'center', justifyContent: 'center' },
+  userMarkerDot: { width: 20, height: 20, borderRadius: 10, borderWidth: 3, borderColor: '#ffffff' },
 });

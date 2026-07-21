@@ -1,25 +1,21 @@
 // src/components/heading-to-pickup-screen.tsx
-import { useEffect, useRef, useState, useCallback } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Linking,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import MapViewDirections from 'react-native-maps-directions';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  View
+} from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapViewDirections from 'react-native-maps-directions';
 
-import { useTheme } from '@/hooks/use-theme';
-import { Spacing } from '@/constants/theme';
-import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { getBooking, updateBookingStatus, type Booking } from '@/lib/api';
 
 const DEFAULT_REGION = {
@@ -117,37 +113,35 @@ export function HeadingToPickupScreen({ bookingId }: HeadingToPickupScreenProps)
     [],
   );
 
+  const pickupCoord = useMemo(() => ({
+    latitude: booking?.pickup_latitude ?? DEFAULT_REGION.latitude,
+    longitude: booking?.pickup_longitude ?? DEFAULT_REGION.longitude,
+  }), [booking?.pickup_latitude, booking?.pickup_longitude]);
+
+  const currentLocation = driverLocation ?? pickupCoord;
+
+  console.log('[HeadingToPickup] Pickup point:', pickupCoord);
+  console.log('[HeadingToPickup] Driver location:', currentLocation);
+
   useEffect(() => {
-    if (!driverLocation || !booking?.pickup_latitude || !booking?.pickup_longitude) return;
+    if (!driverLocation || !booking) return;
 
-    const destination = {
-      latitude: booking.pickup_latitude,
-      longitude: booking.pickup_longitude,
-    };
+    fitMapToRoute([driverLocation, pickupCoord]);
+  }, [driverLocation, booking, pickupCoord, fitMapToRoute]);
 
-    fitMapToRoute([driverLocation, destination]);
-  }, [driverLocation, booking?.pickup_latitude, booking?.pickup_longitude, fitMapToRoute]);
-
-  const handleStart = useCallback(async () => {
+  const handleArrived = useCallback(async () => {
     if (!booking) return;
     setStarting(true);
     setError(null);
     try {
-      await updateBookingStatus(booking.booking_id, { status: 'in_progress' });
+      await updateBookingStatus(booking.booking_id, { status: 'arrived' });
       router.replace(`/(app)/(bookings)/booking/${booking.booking_id}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not start ride.');
+      setError(e instanceof Error ? e.message : 'Could not mark arrived.');
     } finally {
       setStarting(false);
     }
   }, [booking, router]);
-
-  const handleCall = useCallback(() => {
-    if (!booking?.customer?.phone) return;
-    Linking.openURL(`tel:${booking.customer.phone}`).catch(() => {
-      Alert.alert('Unable to call', 'Please check your phone app settings.');
-    });
-  }, [booking?.customer?.phone]);
 
   const formatDuration = (minutes: number) => {
     const hrs = Math.floor(minutes / 60);
@@ -174,20 +168,18 @@ export function HeadingToPickupScreen({ bookingId }: HeadingToPickupScreenProps)
     );
   }
 
-  const pickupCoord = {
-    latitude: booking.pickup_latitude ?? DEFAULT_REGION.latitude,
-    longitude: booking.pickup_longitude ?? DEFAULT_REGION.longitude,
-  };
-
-  const currentLocation = driverLocation ?? pickupCoord;
-
   return (
     <View style={styles.container}>
       <MapView
         ref={mapRef}
         style={styles.map}
         provider={PROVIDER_GOOGLE}
-        initialRegion={DEFAULT_REGION}
+        initialRegion={{
+          latitude: pickupCoord.latitude,
+          longitude: pickupCoord.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
         showsUserLocation={false}
         showsMyLocationButton={false}
         toolbarEnabled={false}
@@ -244,49 +236,50 @@ export function HeadingToPickupScreen({ bookingId }: HeadingToPickupScreenProps)
       )}
 
       <View style={[styles.bottomCard, { backgroundColor: theme.surface }]}>
-        <View style={styles.customerSection}>
-          <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>Customer</Text>
-          <View style={styles.customerRow}>
-            <Avatar
-              firstName={booking.customer?.name?.split(' ')[0] ?? ''}
-              lastName={booking.customer?.name?.split(' ').slice(1).join(' ') || undefined}
-              size={44}
-              fallback="icon"
-            />
-            <View style={styles.customerInfo}>
-              <Text style={[styles.customerName, { color: theme.text }]}>
-                {booking.customer?.name ?? 'Customer'}
-              </Text>
-              <Pressable onPress={handleCall} style={styles.callRow}>
-                <Ionicons name="call" size={16} color={theme.brand} />
-                <Text style={[styles.phoneText, { color: theme.brand }]}>
-                  {booking.customer?.phone ?? ''}
-                </Text>
-              </Pressable>
-              <Text style={[styles.customerEmail, { color: theme.textSecondary }]}>
-                {booking.customer?.email ?? ''}
-              </Text>
-            </View>
+        <View style={styles.compactTop}>
+          <View style={[styles.compactIcon, { backgroundColor: theme.brandSoft }]}>
+            <Ionicons name="location" size={20} color={theme.brand} />
           </View>
+          <View style={styles.compactRoute}>
+            <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
+              {booking.pickup_location}
+            </Text>
+          </View>
+          <StatusBadge status="heading_to_pickup" />
         </View>
 
-        {routeInfo && (
-          <View style={styles.etaRow}>
-            <Ionicons name="time" size={16} color={theme.textSecondary} />
-            <Text style={[styles.etaText, { color: theme.textSecondary }]}>
-              {formatDuration(routeInfo.duration)} to pickup
+        <View style={[styles.compactMeta, { borderTopColor: theme.border }]}>
+          <View style={styles.metaItem}>
+            <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>Customer</Text>
+            <Text style={[styles.metaValue, { color: theme.text }]} numberOfLines={1}>
+              {booking.customer?.name ?? 'Customer'}
             </Text>
-            <Text style={[styles.distanceText, { color: theme.textSecondary }]}>
-              {routeInfo.distance.toFixed(1)} km
-            </Text>
+            {booking.customer?.phone ? (
+              <Text style={[styles.metaContact, { color: theme.brand }]} numberOfLines={1}>
+                {booking.customer.phone}
+              </Text>
+            ) : null}
+            {booking.customer?.email ? (
+              <Text style={[styles.metaContact, { color: theme.textSecondary }]} numberOfLines={1}>
+                {booking.customer.email}
+              </Text>
+            ) : null}
           </View>
-        )}
+          {routeInfo && (
+            <View style={styles.metaItem}>
+              <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>ETA</Text>
+              <Text style={[styles.metaValue, { color: theme.text }]}>
+                {formatDuration(routeInfo.duration)} · {routeInfo.distance.toFixed(1)} km
+              </Text>
+            </View>
+          )}
+        </View>
 
         {error && <Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text>}
 
         <Button
-          title="Start"
-          onPress={handleStart}
+          title="Arrived"
+          onPress={handleArrived}
           loading={starting}
           disabled={starting}
           style={styles.primaryButton}
@@ -346,78 +339,50 @@ const styles = StyleSheet.create({
   },
   bottomCard: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-    paddingBottom: Platform.select({ ios: Spacing.five, android: Spacing.six }),
-    shadowColor: '#3D3796',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(61, 55, 150, 0.08)',
+    bottom: BottomTabInset + Spacing.two,
+    left: Spacing.four,
+    right: Spacing.four,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.three,
   },
-  customerSection: {
+  compactTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.two,
   },
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  customerRow: {
-    flexDirection: 'row',
+  compactIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
-    gap: Spacing.three,
+    justifyContent: 'center',
   },
-  customerInfo: {
-    flex: 1,
-    gap: Spacing.one,
-  },
-  customerName: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  callRow: {
+  compactRoute: { flex: 1, gap: 1 },
+  compactPoint: { fontSize: 13, fontWeight: 700 },
+  compactMeta: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+    paddingTop: Spacing.two,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
-  phoneText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  customerEmail: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  etaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    marginTop: Spacing.three,
-  },
-  etaText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  distanceText: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: Spacing.two,
-  },
+  metaItem: { flex: 1, gap: 1 },
+  metaLabel: { fontSize: 10, fontWeight: 600, opacity: 0.85 },
+  metaValue: { fontSize: 12, fontWeight: 600 },
+  metaContact: { fontSize: 11, fontWeight: 500 },
   primaryButton: {
-    marginTop: Spacing.three,
+    marginTop: Spacing.two,
   },
   errorText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    marginTop: Spacing.two,
+    marginTop: Spacing.one,
   },
 });

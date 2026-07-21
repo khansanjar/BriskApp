@@ -8,44 +8,44 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#2A2653',
-    textSecondary: '#6B6790',
-    background: '#F5F4FC',
-    backgroundElement: '#EDEAFB',
-    backgroundSelected: '#E0E7FF',
+    text: '#1C1917',            // Deep warm dark text
+    textSecondary: '#716A62',   // Muted slate gray
+    background: '#F9F8F5',      // Soft off-white
+    backgroundElement: '#EFECE6',
+    backgroundSelected: '#FDF6E2', // Light gold tinted background
     surface: '#FFFFFF',
-    surfaceSecondary: '#F2F0FD',
-    border: '#E4E1F5',
-    brand: '#3D3796',
-    brandSoft: '#E0E7FF',
-    brandText: '#FFFFFF',
-    primaryLight: '#6B62C7',
-    success: '#22C55E',
-    successSoft: '#E3F9EC',
-    warning: '#F59E0B',
-    warningSoft: '#FDF0DA',
-    danger: '#EF4444',
-    dangerSoft: '#FCE4E4',
+    surfaceSecondary: '#FAF8F5',
+    border: '#E7E3DA',
+    brand: '#F0C75E',          // Primary Gold
+    brandSoft: '#FDF3D8',      // Soft gold container tint
+    brandText: '#121110',      // Dark text for high contrast on primary gold buttons
+    primaryLight: '#D1A333',   // Richer golden accent
+    success: '#16A34A',
+    successSoft: '#E8F5E9',
+    warning: '#D97706',
+    warningSoft: '#FEF3C7',
+    danger: '#DC2626',
+    dangerSoft: '#FEE2E2',
   },
   dark: {
-    text: '#EDEBFA',
-    textSecondary: '#A39DC9',
-    background: '#15132B',
-    backgroundElement: '#211D44',
-    backgroundSelected: '#2A2656',
-    surface: '#1E1B3D',
-    surfaceSecondary: '#262347',
-    border: '#2E2A54',
-    brand: '#7C74E0',
-    brandSoft: '#2A2656',
-    brandText: '#FFFFFF',
-    primaryLight: '#9D96EA',
+    text: '#F5F4F0',            // Off-white text
+    textSecondary: '#A19B91',   // Soft warm muted gray
+    background: '#121110',      // Rich dark charcoal background
+    backgroundElement: '#1E1C1A',
+    backgroundSelected: '#2A261D',
+    surface: '#181715',
+    surfaceSecondary: '#24221E',
+    border: '#2E2B26',
+    brand: '#F0C75E',          // Primary Gold highlight
+    brandSoft: '#332B15',      // Subtle dark gold tint
+    brandText: '#121110',      // Dark text for gold buttons
+    primaryLight: '#F4D685',   // Soft pastel gold accent
     success: '#34D399',
-    successSoft: '#16281F',
+    successSoft: '#122A21',
     warning: '#FBBF24',
-    warningSoft: '#2E2713',
+    warningSoft: '#2C2311',
     danger: '#F87171',
-    dangerSoft: '#2E1B1F',
+    dangerSoft: '#2D1919',
   },
 } as const;
 

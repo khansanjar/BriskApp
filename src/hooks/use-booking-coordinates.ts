@@ -11,6 +11,8 @@ export interface BookingCoordinates {
   dropoff: LatLng | null;
 }
 
+const GEOCODE_REGION_BIAS = 'Islamabad, Pakistan';
+
 const geocodeCache = new Map<string, LatLng>();
 
 function isValidCoord(lat: number | null | undefined, lng: number | null | undefined): boolean {
@@ -43,15 +45,16 @@ export function resolveBookingCoordinates(booking: {
 }
 
 export async function geocodeAddress(address: string): Promise<LatLng | null> {
-  if (geocodeCache.has(address)) {
-    return geocodeCache.get(address)!;
+  const enhancedAddress = `${address}, ${GEOCODE_REGION_BIAS}`;
+  if (geocodeCache.has(enhancedAddress)) {
+    return geocodeCache.get(enhancedAddress)!;
   }
 
   try {
-    const results = await Location.geocodeAsync(address);
+    const results = await Location.geocodeAsync(enhancedAddress);
     if (results[0] && typeof results[0].latitude === 'number' && typeof results[0].longitude === 'number') {
       const coords = { latitude: results[0].latitude, longitude: results[0].longitude };
-      geocodeCache.set(address, coords);
+      geocodeCache.set(enhancedAddress, coords);
       return coords;
     }
   } catch {

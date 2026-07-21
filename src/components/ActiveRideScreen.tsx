@@ -3,9 +3,6 @@ import {
   StyleSheet,
   View,
   Text,
-  Pressable,
-  Linking,
-  Alert,
   Platform,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -14,9 +11,9 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import * as Location from 'expo-location';
 
 import { useTheme } from '@/hooks/use-theme';
-import { Spacing } from '@/constants/theme';
-import { Avatar } from '@/components/ui/avatar';
+import { Spacing, BottomTabInset } from '@/constants/theme';
 import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/ui/status-badge';
 
 export type RideStatus = 'EN_ROUTE_TO_PICKUP' | 'ARRIVED_AT_PICKUP' | 'EN_ROUTE_TO_DESTINATION' | 'COMPLETED';
 
@@ -34,13 +31,6 @@ interface ActiveRideScreenProps {
   onStartRide?: () => void;
   onCompleteRide?: () => void;
 }
-
-const DEFAULT_REGION = {
-  latitude: 40.4168,
-  longitude: -3.7038,
-  latitudeDelta: 0.0922,
-  longitudeDelta: 0.0421,
-};
 
 export function ActiveRideScreen({
   rideDetails,
@@ -150,12 +140,6 @@ export function ActiveRideScreen({
     onCompleteRide?.();
   }, [onCompleteRide]);
 
-  const handleCall = useCallback(() => {
-    Linking.openURL(`tel:${rideDetails.customer.phone}`).catch(() => {
-      Alert.alert('Unable to call', 'Please check your phone app settings.');
-    });
-  }, [rideDetails.customer.phone]);
-
   const currentLocation = driverLocation ?? rideDetails.driverLocation;
   const showRoute =
     rideStatus === 'EN_ROUTE_TO_PICKUP' || rideStatus === 'EN_ROUTE_TO_DESTINATION';
@@ -164,6 +148,21 @@ export function ActiveRideScreen({
     rideStatus === 'EN_ROUTE_TO_PICKUP' || rideStatus === 'ARRIVED_AT_PICKUP'
       ? rideDetails.pickupLocation
       : rideDetails.dropoffLocation;
+
+  const initialMapRegion =
+    rideStatus === 'EN_ROUTE_TO_DESTINATION' || rideStatus === 'COMPLETED'
+      ? {
+          latitude: rideDetails.dropoffLocation.latitude,
+          longitude: rideDetails.dropoffLocation.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }
+      : {
+          latitude: rideDetails.pickupLocation.latitude,
+          longitude: rideDetails.pickupLocation.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        };
 
   const formatDuration = (minutes: number) => {
     const hrs = Math.floor(minutes / 60);
@@ -174,89 +173,69 @@ export function ActiveRideScreen({
 
   const renderPickupCard = () => (
     <>
-      <View style={styles.cardHeader}>
-        <Text style={[styles.cardTitle, { color: theme.text }]}>Pickup Location</Text>
-        <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
-          {rideDetails.pickupLocation.address}
-        </Text>
-      </View>
-
-      <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-      <View style={styles.customerSection}>
-        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>Customer</Text>
-        <View style={styles.customerRow}>
-          <Avatar
-            firstName={rideDetails.customer.name.split(' ')[0]}
-            lastName={rideDetails.customer.name.split(' ').slice(1).join(' ') || undefined}
-            photo={rideDetails.customer.avatar ?? undefined}
-            size={44}
-            fallback="icon"
-          />
-          <View style={styles.customerInfo}>
-            <Text style={[styles.customerName, { color: theme.text }]}>
-              {rideDetails.customer.name}
-            </Text>
-            <Pressable onPress={handleCall} style={styles.callRow}>
-              <Ionicons name="call" size={16} color={theme.brand} />
-              <Text style={[styles.phoneText, { color: theme.brand }]}>
-                {rideDetails.customer.phone}
-              </Text>
-            </Pressable>
-          </View>
+      <View style={styles.compactTop}>
+        <View style={[styles.compactIcon, { backgroundColor: theme.brandSoft }]}>
+          <Ionicons name="location" size={20} color={theme.brand} />
         </View>
-        <Text style={[styles.customerEmail, { color: theme.textSecondary }]}>
-          {rideDetails.customer.email}
-        </Text>
+        <View style={styles.compactRoute}>
+          <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
+            {rideDetails.pickupLocation.address}
+          </Text>
+        </View>
+        <StatusBadge status={rideStatus === 'ARRIVED_AT_PICKUP' ? 'arrived' : 'heading_to_pickup'} />
       </View>
 
       {routeInfo && (
-        <View style={styles.etaRow}>
-          <Ionicons name="time" size={16} color={theme.textSecondary} />
-          <Text style={[styles.etaText, { color: theme.textSecondary }]}>
-            {formatDuration(routeInfo.duration)} to pickup
-          </Text>
+        <View style={[styles.compactMeta, { borderTopColor: theme.border }]}>
+          <View style={styles.metaItem}>
+            <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>ETA</Text>
+            <Text style={[styles.metaValue, { color: theme.text }]}>
+              {formatDuration(routeInfo.duration)} · {routeInfo.distance.toFixed(1)} km
+            </Text>
+          </View>
         </View>
       )}
 
-      <Button title="Mark as Arrived" onPress={handleMarkArrived} style={styles.primaryButton} />
+      <Button
+        title={rideStatus === 'ARRIVED_AT_PICKUP' ? 'Start Ride' : 'Mark as Arrived'}
+        onPress={rideStatus === 'ARRIVED_AT_PICKUP' ? handleStartRide : handleMarkArrived}
+        style={styles.primaryButton}
+      />
     </>
   );
 
   const renderArrivedCard = () => (
     <>
-      <View style={styles.statusRow}>
-        <View style={[styles.statusDot, { backgroundColor: theme.warning }]} />
-        <Text style={[styles.statusText, { color: theme.warning }]}>Driver Arrived</Text>
+      <View style={styles.compactTop}>
+        <View style={[styles.compactIcon, { backgroundColor: theme.warningSoft }]}>
+          <Ionicons name="checkmark-circle" size={20} color={theme.warning} />
+        </View>
+        <View style={styles.compactRoute}>
+          <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
+            {rideDetails.pickupLocation.address}
+          </Text>
+          <Text style={[styles.compactArrow, { color: theme.textSecondary }]}>You have arrived</Text>
+        </View>
+        <StatusBadge status="arrived" />
       </View>
 
-      <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-      <View style={styles.customerSection}>
-        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>Customer</Text>
-        <View style={styles.customerRow}>
-          <Avatar
-            firstName={rideDetails.customer.name.split(' ')[0]}
-            lastName={rideDetails.customer.name.split(' ').slice(1).join(' ') || undefined}
-            photo={rideDetails.customer.avatar ?? undefined}
-            size={44}
-            fallback="icon"
-          />
-          <View style={styles.customerInfo}>
-            <Text style={[styles.customerName, { color: theme.text }]}>
-              {rideDetails.customer.name}
+      <View style={[styles.compactMeta, { borderTopColor: theme.border }]}>
+        <View style={styles.metaItem}>
+          <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>Customer</Text>
+          <Text style={[styles.metaValue, { color: theme.text }]} numberOfLines={1}>
+            {rideDetails.customer.name}
+          </Text>
+          {rideDetails.customer.phone ? (
+            <Text style={[styles.metaContact, { color: theme.brand }]} numberOfLines={1}>
+              {rideDetails.customer.phone}
             </Text>
-            <Pressable onPress={handleCall} style={styles.callRow}>
-              <Ionicons name="call" size={16} color={theme.brand} />
-              <Text style={[styles.phoneText, { color: theme.brand }]}>
-                {rideDetails.customer.phone}
-              </Text>
-            </Pressable>
-          </View>
+          ) : null}
+          {rideDetails.customer.email ? (
+            <Text style={[styles.metaContact, { color: theme.textSecondary }]} numberOfLines={1}>
+              {rideDetails.customer.email}
+            </Text>
+          ) : null}
         </View>
-        <Text style={[styles.customerEmail, { color: theme.textSecondary }]}>
-          {rideDetails.customer.email}
-        </Text>
       </View>
 
       <Button title="Start Ride" onPress={handleStartRide} style={styles.primaryButton} />
@@ -265,45 +244,26 @@ export function ActiveRideScreen({
 
   const renderDestinationCard = () => (
     <>
-      <View style={styles.cardHeader}>
-        <Text style={[styles.cardTitle, { color: theme.text }]}>Destination</Text>
-        <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
-          {rideDetails.dropoffLocation.address}
-        </Text>
-      </View>
-
-      <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-      <View style={styles.customerRow}>
-        <Avatar
-          firstName={rideDetails.customer.name.split(' ')[0]}
-          lastName={rideDetails.customer.name.split(' ').slice(1).join(' ') || undefined}
-          photo={rideDetails.customer.avatar ?? undefined}
-          size={44}
-          fallback="icon"
-        />
-        <View style={styles.customerInfo}>
-          <Text style={[styles.customerName, { color: theme.text }]}>
-            {rideDetails.customer.name}
-          </Text>
-          <Pressable onPress={handleCall} style={styles.callRow}>
-            <Ionicons name="call" size={16} color={theme.brand} />
-            <Text style={[styles.phoneText, { color: theme.brand }]}>
-              {rideDetails.customer.phone}
-            </Text>
-          </Pressable>
+      <View style={styles.compactTop}>
+        <View style={[styles.compactIcon, { backgroundColor: theme.brandSoft }]}>
+          <Ionicons name="flag" size={20} color={theme.brand} />
         </View>
+        <View style={styles.compactRoute}>
+          <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
+            {rideDetails.dropoffLocation.address}
+          </Text>
+        </View>
+        <StatusBadge status="in_progress" />
       </View>
 
       {routeInfo && (
-        <View style={styles.etaRow}>
-          <Ionicons name="time" size={16} color={theme.textSecondary} />
-          <Text style={[styles.etaText, { color: theme.textSecondary }]}>
-            {formatDuration(routeInfo.duration)} to destination
-          </Text>
-          <Text style={[styles.distanceText, { color: theme.textSecondary }]}>
-            {routeInfo.distance.toFixed(1)} km
-          </Text>
+        <View style={[styles.compactMeta, { borderTopColor: theme.border }]}>
+          <View style={styles.metaItem}>
+            <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>ETA</Text>
+            <Text style={[styles.metaValue, { color: theme.text }]}>
+              {formatDuration(routeInfo.duration)} · {routeInfo.distance.toFixed(1)} km
+            </Text>
+          </View>
         </View>
       )}
 
@@ -312,12 +272,17 @@ export function ActiveRideScreen({
   );
 
   const renderCompletedCard = () => (
-    <View style={styles.completedContainer}>
-      <Ionicons name="checkmark-circle" size={48} color={theme.success} />
-      <Text style={[styles.completedTitle, { color: theme.text }]}>Ride Completed</Text>
-      <Text style={[styles.completedSubtitle, { color: theme.textSecondary }]}>
-        You have reached {rideDetails.dropoffLocation.address}
-      </Text>
+    <View style={styles.compactTop}>
+      <View style={[styles.compactIcon, { backgroundColor: theme.successSoft }]}>
+        <Ionicons name="checkmark-circle" size={22} color={theme.success} />
+      </View>
+      <View style={styles.compactRoute}>
+        <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
+          {rideDetails.dropoffLocation.address}
+        </Text>
+        <Text style={[styles.compactArrow, { color: theme.textSecondary }]}>Ride Completed</Text>
+      </View>
+      <StatusBadge status="completed" />
     </View>
   );
 
@@ -327,7 +292,7 @@ export function ActiveRideScreen({
         ref={mapRef}
         style={styles.map}
         provider={PROVIDER_GOOGLE}
-        initialRegion={DEFAULT_REGION}
+        initialRegion={initialMapRegion}
         showsUserLocation={false}
         showsMyLocationButton={false}
         toolbarEnabled={false}
@@ -368,6 +333,9 @@ export function ActiveRideScreen({
             </View>
           </Marker>
         )}
+
+        {rideStatus === 'EN_ROUTE_TO_PICKUP' && console.log('[ActiveRide] Pickup point:', rideDetails.pickupLocation)}
+        {(rideStatus === 'EN_ROUTE_TO_DESTINATION' || rideStatus === 'COMPLETED') && console.log('[ActiveRide] Dropoff point:', rideDetails.dropoffLocation)}
 
         {showRoute && routeOrigin && googleApiKey && (
           <MapViewDirections
@@ -449,42 +417,65 @@ const styles = StyleSheet.create({
   },
   bottomCard: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-    paddingBottom: Platform.select({ ios: Spacing.five, android: Spacing.six }),
-    shadowColor: '#3D3796',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(61, 55, 150, 0.08)',
+    bottom: BottomTabInset + Spacing.two,
+    left: Spacing.four,
+    right: Spacing.four,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.three,
   },
   cardHeader: {
     gap: Spacing.one,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    marginVertical: Spacing.three,
+    marginVertical: Spacing.two,
   },
-  customerSection: {
+  compactTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.two,
   },
+  compactIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compactRoute: { flex: 1, gap: 1 },
+  compactPoint: { fontSize: 13, fontWeight: 700 },
+  compactArrow: { fontSize: 12, fontWeight: 700, marginVertical: 1 },
+  compactMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+    paddingTop: Spacing.two,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  metaItem: { flex: 1, gap: 1 },
+  metaLabel: { fontSize: 10, fontWeight: 600, opacity: 0.85 },
+  metaValue: { fontSize: 12, fontWeight: 600 },
+  metaContact: { fontSize: 11, fontWeight: 500 },
+  customerSection: {
+    gap: Spacing.one,
+  },
   sectionLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -492,14 +483,14 @@ const styles = StyleSheet.create({
   customerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
+    gap: Spacing.two,
   },
   customerInfo: {
     flex: 1,
     gap: Spacing.one,
   },
   customerName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   callRow: {
@@ -508,30 +499,30 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   phoneText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
   },
   customerEmail: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
   },
   etaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.one,
-    marginTop: Spacing.three,
+    marginTop: Spacing.two,
   },
   etaText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   distanceText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     marginLeft: Spacing.two,
   },
   primaryButton: {
-    marginTop: Spacing.three,
+    marginTop: Spacing.two,
   },
   statusRow: {
     flexDirection: 'row',

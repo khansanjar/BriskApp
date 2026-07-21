@@ -1,5 +1,6 @@
 // src/app/(app)/(bookings)/index.tsx
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useFocusEffect, router } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
@@ -9,7 +10,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
 
 import { BookingCard } from '@/components/booking-card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -60,6 +60,22 @@ export default function BookingsListScreen() {
       active = false;
     };
   }, [tab, load]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        if (active) {
+          setRefreshing(true);
+          await load(tab, 1, false);
+          setRefreshing(false);
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [load, tab])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
