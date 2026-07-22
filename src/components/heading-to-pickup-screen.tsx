@@ -1,13 +1,16 @@
 // src/components/heading-to-pickup-screen.tsx
+// ⚠️ DEPRECATED: This component has been merged into ActiveRideScreen.tsx
+// Use ActiveRideScreen instead for all active ride statuses (heading_to_pickup, arrived, in_progress)
+// This file is kept for reference only and should not be imported in new code.
+
 import Ionicons from '@react-native-vector-icons/ionicons';
 import * as Location from 'expo-location';
-import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  View
+    ActivityIndicator,
+    StyleSheet,
+    Text,
+    View
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
@@ -18,18 +21,12 @@ import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getBooking, updateBookingStatus, type Booking } from '@/lib/api';
 
-const DEFAULT_REGION = {
-  latitude: 40.4168,
-  longitude: -3.7038,
-  latitudeDelta: 0.0922,
-  longitudeDelta: 0.0421,
-};
-
 interface HeadingToPickupScreenProps {
   bookingId: number;
+  onStatusUpdate?: () => void;
 }
 
-export function HeadingToPickupScreen({ bookingId }: HeadingToPickupScreenProps) {
+export function HeadingToPickupScreen({ bookingId, onStatusUpdate }: HeadingToPickupScreenProps) {
   const theme = useTheme();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
@@ -87,7 +84,7 @@ export function HeadingToPickupScreen({ bookingId }: HeadingToPickupScreenProps)
       }
 
       watchRef.current = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 10 },
+        { accuracy: Location.Accuracy.High, timeInterval: 1000, distanceInterval:10 },
         (loc) => {
           if (loc.coords.latitude === 0 && loc.coords.longitude === 0) return;
           setDriverLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
@@ -114,9 +111,9 @@ export function HeadingToPickupScreen({ bookingId }: HeadingToPickupScreenProps)
   );
 
   const pickupCoord = useMemo(() => ({
-    latitude: booking?.pickup_latitude ?? DEFAULT_REGION.latitude,
-    longitude: booking?.pickup_longitude ?? DEFAULT_REGION.longitude,
-  }), [booking?.pickup_latitude, booking?.pickup_longitude]);
+    latitude: booking?.pickup_latitude ?? driverLocation?.latitude ?? 0,
+    longitude: booking?.pickup_longitude ?? driverLocation?.longitude ?? 0,
+  }), [booking?.pickup_latitude, booking?.pickup_longitude, driverLocation]);
 
   const currentLocation = driverLocation ?? pickupCoord;
 
@@ -135,13 +132,14 @@ export function HeadingToPickupScreen({ bookingId }: HeadingToPickupScreenProps)
     setError(null);
     try {
       await updateBookingStatus(booking.booking_id, { status: 'arrived' });
-      router.replace(`/(app)/(bookings)/booking/${booking.booking_id}`);
+      await load();
+      onStatusUpdate?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not mark arrived.');
     } finally {
       setStarting(false);
     }
-  }, [booking, router]);
+  }, [booking, load, onStatusUpdate]);
 
   const formatDuration = (minutes: number) => {
     const hrs = Math.floor(minutes / 60);
@@ -149,6 +147,9 @@ export function HeadingToPickupScreen({ bookingId }: HeadingToPickupScreenProps)
     if (hrs > 0) return `${hrs}h ${mins}m`;
     return `${mins} min`;
   };
+
+  // If we don't have valid coordinates yet, show loading
+  const hasValidCoordinates = pickupCoord.latitude !== 0 && pickupCoord.longitude !== 0;
 
   if (loading) {
     return (
@@ -164,6 +165,14 @@ export function HeadingToPickupScreen({ bookingId }: HeadingToPickupScreenProps)
         <Text style={[styles.message, { color: theme.textSecondary }]}>
           {error ?? 'Booking not found.'}
         </Text>
+      </View>
+    );
+  }
+
+  if (!hasValidCoordinates) {
+    return (
+      <View style={[styles.center, { backgroundColor: theme.background }]}>
+        <ActivityIndicator color={theme.brand} size="large" />
       </View>
     );
   }

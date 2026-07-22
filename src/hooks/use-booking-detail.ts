@@ -2,11 +2,11 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import {
-  cancelBooking,
-  getBooking,
-  updateBookingStatus,
-  type Booking,
-  type DriverStatus,
+    cancelBooking,
+    getBooking,
+    updateBookingStatus,
+    type Booking,
+    type DriverStatus,
 } from '@/lib/api';
 
 export function useBookingDetail(id: number) {
@@ -32,6 +32,11 @@ export function useBookingDetail(id: number) {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setBooking(null);
+    setError(null);
+  }, [id]);
 
   const update = useCallback(
     async (status: DriverStatus) => {

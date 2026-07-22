@@ -1,56 +1,76 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+// src/components/ActiveRideScreen.tsx
+import Ionicons from '@react-native-vector-icons/ionicons';
+import * as Location from 'expo-location';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   StyleSheet,
-  View,
   Text,
-  Platform,
+  View
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
-import Ionicons from '@react-native-vector-icons/ionicons';
-import * as Location from 'expo-location';
 
-import { useTheme } from '@/hooks/use-theme';
-import { Spacing, BottomTabInset } from '@/constants/theme';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { type Booking, type DriverStatus } from '@/lib/api';
 
-export type RideStatus = 'EN_ROUTE_TO_PICKUP' | 'ARRIVED_AT_PICKUP' | 'EN_ROUTE_TO_DESTINATION' | 'COMPLETED';
-
-export interface RideDetails {
-  driverLocation: { latitude: number; longitude: number };
-  pickupLocation: { latitude: number; longitude: number; address: string };
-  dropoffLocation: { latitude: number; longitude: number; address: string };
-  customer: { name: string; phone: string; email: string; avatar: string | null };
-}
-
-interface ActiveRideScreenProps {
-  rideDetails: RideDetails;
-  initialStatus?: RideStatus;
-  onMarkArrived?: () => void;
-  onStartRide?: () => void;
-  onCompleteRide?: () => void;
+export interface ActiveRideScreenProps {
+  booking: Booking;
+  pickupCoords?: { latitude: number; longitude: number } | null;
+  dropoffCoords?: { latitude: number; longitude: number } | null;
+  onStatusChange: (status: DriverStatus) => Promise<void>;
+  onRideComplete?: () => void;
 }
 
 export function ActiveRideScreen({
-  rideDetails,
-  initialStatus = 'EN_ROUTE_TO_PICKUP',
-  onMarkArrived,
-  onStartRide,
-  onCompleteRide,
+  booking,
+  pickupCoords,
+  dropoffCoords,
+  onStatusChange,
+  onRideComplete,
 }: ActiveRideScreenProps) {
   const theme = useTheme();
-  const [rideStatus, setRideStatus] = useState<RideStatus>(initialStatus);
-  const [driverLocation, setDriverLocation] = useState<{ latitude: number; longitude: number } | null>(
-    null,
-  );
+  
+  // 1. Local status state for Instant / Smooth UI transition
+  const [currentStatus, setCurrentStatus] = useState<DriverStatus>(booking.driver_status);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [driverLocation, setDriverLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
 
   const mapRef = useRef<MapView>(null);
   const watchRef = useRef<Location.LocationSubscription | null>(null);
+  const hasFittedMapRef = useRef<string | null>(null);
   const googleApiKey = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
 
+  const b = booking as Record<string, any>;
+
+  // Sync with prop if parent updates from outside
+  useEffect(() => {
+    setCurrentStatus(booking.driver_status);
+  }, [booking.driver_status]);
+
+  // Memoize locations
+  const pickupLocation = useMemo(() => ({
+    latitude: pickupCoords?.latitude ?? Number(b.pickup_latitude ?? 0),
+    longitude: pickupCoords?.longitude ?? Number(b.pickup_longitude ?? 0),
+    address: (b.pickup_address as string) || (b.pickup?.address as string) || 'Pickup Location',
+  }), [pickupCoords, b.pickup_latitude, b.pickup_longitude, b.pickup_address, b.pickup]);
+
+  const dropoffLocation = useMemo(() => ({
+    latitude: dropoffCoords?.latitude ?? Number(b.dropoff_latitude ?? 0),
+    longitude: dropoffCoords?.longitude ?? Number(b.dropoff_longitude ?? 0),
+    address: (b.dropoff_address as string) || (b.dropoff?.address as string) || 'Dropoff Location',
+  }), [dropoffCoords, b.dropoff_latitude, b.dropoff_longitude, b.dropoff_address, b.dropoff]);
+
+  const customerName = (b.customer_name as string) || (b.customer?.name as string) || 'Passenger';
+  const customerPhone = (b.customer_phone as string) || (b.customer?.phone as string) || null;
+  const customerEmail = (b.customer_email as string) || (b.customer?.email as string) || null;
+
+  // Track Driver GPS Location
   useEffect(() => {
     let active = true;
 
@@ -59,7 +79,7 @@ export function ActiveRideScreen({
       if (status !== 'granted') {
         if (active) {
           setLocationError('Location permission denied.');
-          setDriverLocation(rideDetails.driverLocation);
+          setDriverLocation(pickupLocation);
         }
         return;
       }
@@ -74,7 +94,7 @@ export function ActiveRideScreen({
         }
       } catch {
         if (active) {
-          setDriverLocation(rideDetails.driverLocation);
+          setDriverLocation(pickupLocation);
         }
       }
 
@@ -83,7 +103,7 @@ export function ActiveRideScreen({
         (loc) => {
           if (loc.coords.latitude === 0 && loc.coords.longitude === 0) return;
           setDriverLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
-        },
+        }
       );
     })();
 
@@ -92,7 +112,7 @@ export function ActiveRideScreen({
       watchRef.current?.remove();
       watchRef.current = null;
     };
-  }, [rideDetails.driverLocation]);
+  }, [booking.booking_id]);
 
   const fitMapToRoute = useCallback(
     (coords: { latitude: number; longitude: number }[]) => {
@@ -102,67 +122,75 @@ export function ActiveRideScreen({
         animated: true,
       });
     },
-    [],
+    []
   );
 
+  // Smooth camera refocus when status changes
   useEffect(() => {
     if (!driverLocation) return;
 
-    if (rideStatus === 'EN_ROUTE_TO_PICKUP') {
-      fitMapToRoute([driverLocation, rideDetails.pickupLocation]);
-    } else if (rideStatus === 'ARRIVED_AT_PICKUP') {
-      fitMapToRoute([driverLocation, rideDetails.pickupLocation]);
-    } else if (rideStatus === 'EN_ROUTE_TO_DESTINATION') {
-      fitMapToRoute([driverLocation, rideDetails.dropoffLocation]);
-    } else if (rideStatus === 'COMPLETED') {
-      mapRef.current?.fitToCoordinates([rideDetails.dropoffLocation], {
-        edgePadding: { top: 80, right: 80, bottom: 320, left: 80 },
-        animated: true,
-      });
+    if (hasFittedMapRef.current !== currentStatus) {
+      if (currentStatus === 'heading_to_pickup' || currentStatus === 'arrived') {
+        fitMapToRoute([driverLocation, pickupLocation]);
+      } else if (currentStatus === 'in_progress') {
+        fitMapToRoute([driverLocation, dropoffLocation]);
+      } else if (currentStatus === 'completed') {
+        mapRef.current?.fitToCoordinates([dropoffLocation], {
+          edgePadding: { top: 80, right: 80, bottom: 320, left: 80 },
+          animated: true,
+        });
+      }
+      hasFittedMapRef.current = currentStatus;
     }
-  }, [rideStatus, driverLocation, rideDetails.pickupLocation, rideDetails.dropoffLocation, fitMapToRoute]);
+  }, [currentStatus, driverLocation, pickupLocation, dropoffLocation, fitMapToRoute]);
 
-  const handleMarkArrived = useCallback(() => {
-    setRideStatus('ARRIVED_AT_PICKUP');
+  // 2. Optimistic Status Handler
+  const handleStatusTransition = useCallback(async (nextStatus: DriverStatus) => {
+    setIsSubmitting(true);
     setRouteInfo(null);
-    onMarkArrived?.();
-  }, [onMarkArrived]);
 
-  const handleStartRide = useCallback(() => {
-    setRideStatus('EN_ROUTE_TO_DESTINATION');
-    setRouteInfo(null);
-    onStartRide?.();
-  }, [onStartRide]);
+    // Instant local UI switch
+    setCurrentStatus(nextStatus);
+    hasFittedMapRef.current = null;
 
-  const handleCompleteRide = useCallback(() => {
-    setRideStatus('COMPLETED');
-    setRouteInfo(null);
-    onCompleteRide?.();
-  }, [onCompleteRide]);
+    try {
+      // Call API in background
+      await onStatusChange(nextStatus);
+      if (nextStatus === 'completed') {
+        onRideComplete?.();
+      }
+    } catch (error) {
+      // Rollback status if backend fails
+      setCurrentStatus(booking.driver_status);
+      console.error('Failed to change ride status:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [onStatusChange, onRideComplete, booking.driver_status]);
 
-  const currentLocation = driverLocation ?? rideDetails.driverLocation;
-  const showRoute =
-    rideStatus === 'EN_ROUTE_TO_PICKUP' || rideStatus === 'EN_ROUTE_TO_DESTINATION';
+  const currentLocation = driverLocation ?? pickupLocation;
+  const showRoute = currentStatus === 'heading_to_pickup' || currentStatus === 'in_progress';
   const routeOrigin = showRoute ? currentLocation : null;
   const routeDestination =
-    rideStatus === 'EN_ROUTE_TO_PICKUP' || rideStatus === 'ARRIVED_AT_PICKUP'
-      ? rideDetails.pickupLocation
-      : rideDetails.dropoffLocation;
+    currentStatus === 'heading_to_pickup' || currentStatus === 'arrived'
+      ? pickupLocation
+      : dropoffLocation;
 
-  const initialMapRegion =
-    rideStatus === 'EN_ROUTE_TO_DESTINATION' || rideStatus === 'COMPLETED'
+  const initialMapRegion = useMemo(() => {
+    return currentStatus === 'in_progress' || currentStatus === 'completed'
       ? {
-          latitude: rideDetails.dropoffLocation.latitude,
-          longitude: rideDetails.dropoffLocation.longitude,
+          latitude: dropoffLocation.latitude,
+          longitude: dropoffLocation.longitude,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }
       : {
-          latitude: rideDetails.pickupLocation.latitude,
-          longitude: rideDetails.pickupLocation.longitude,
+          latitude: pickupLocation.latitude,
+          longitude: pickupLocation.longitude,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         };
+  }, [currentStatus, pickupLocation, dropoffLocation]);
 
   const formatDuration = (minutes: number) => {
     const hrs = Math.floor(minutes / 60);
@@ -179,10 +207,10 @@ export function ActiveRideScreen({
         </View>
         <View style={styles.compactRoute}>
           <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
-            {rideDetails.pickupLocation.address}
+            {pickupLocation.address}
           </Text>
         </View>
-        <StatusBadge status={rideStatus === 'ARRIVED_AT_PICKUP' ? 'arrived' : 'heading_to_pickup'} />
+        <StatusBadge status={currentStatus} />
       </View>
 
       {routeInfo && (
@@ -197,8 +225,9 @@ export function ActiveRideScreen({
       )}
 
       <Button
-        title={rideStatus === 'ARRIVED_AT_PICKUP' ? 'Start Ride' : 'Mark as Arrived'}
-        onPress={rideStatus === 'ARRIVED_AT_PICKUP' ? handleStartRide : handleMarkArrived}
+        title={isSubmitting ? "Updating..." : "Mark as Arrived"}
+        disabled={isSubmitting}
+        onPress={() => handleStatusTransition('arrived')}
         style={styles.primaryButton}
       />
     </>
@@ -212,7 +241,7 @@ export function ActiveRideScreen({
         </View>
         <View style={styles.compactRoute}>
           <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
-            {rideDetails.pickupLocation.address}
+            {pickupLocation.address}
           </Text>
           <Text style={[styles.compactArrow, { color: theme.textSecondary }]}>You have arrived</Text>
         </View>
@@ -223,22 +252,27 @@ export function ActiveRideScreen({
         <View style={styles.metaItem}>
           <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>Customer</Text>
           <Text style={[styles.metaValue, { color: theme.text }]} numberOfLines={1}>
-            {rideDetails.customer.name}
+            {customerName}
           </Text>
-          {rideDetails.customer.phone ? (
+          {customerPhone ? (
             <Text style={[styles.metaContact, { color: theme.brand }]} numberOfLines={1}>
-              {rideDetails.customer.phone}
+              {customerPhone}
             </Text>
           ) : null}
-          {rideDetails.customer.email ? (
+          {customerEmail ? (
             <Text style={[styles.metaContact, { color: theme.textSecondary }]} numberOfLines={1}>
-              {rideDetails.customer.email}
+              {customerEmail}
             </Text>
           ) : null}
         </View>
       </View>
 
-      <Button title="Start Ride" onPress={handleStartRide} style={styles.primaryButton} />
+      <Button
+        title={isSubmitting ? "Starting..." : "Start Ride"}
+        disabled={isSubmitting}
+        onPress={() => handleStatusTransition('in_progress')}
+        style={styles.primaryButton}
+      />
     </>
   );
 
@@ -250,7 +284,7 @@ export function ActiveRideScreen({
         </View>
         <View style={styles.compactRoute}>
           <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
-            {rideDetails.dropoffLocation.address}
+            {dropoffLocation.address}
           </Text>
         </View>
         <StatusBadge status="in_progress" />
@@ -267,7 +301,12 @@ export function ActiveRideScreen({
         </View>
       )}
 
-      <Button title="Complete Ride" onPress={handleCompleteRide} style={styles.primaryButton} />
+      <Button
+        title={isSubmitting ? "Completing..." : "Complete Ride"}
+        disabled={isSubmitting}
+        onPress={() => handleStatusTransition('completed')}
+        style={styles.primaryButton}
+      />
     </>
   );
 
@@ -278,7 +317,7 @@ export function ActiveRideScreen({
       </View>
       <View style={styles.compactRoute}>
         <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
-          {rideDetails.dropoffLocation.address}
+          {dropoffLocation.address}
         </Text>
         <Text style={[styles.compactArrow, { color: theme.textSecondary }]}>Ride Completed</Text>
       </View>
@@ -308,11 +347,11 @@ export function ActiveRideScreen({
           </View>
         </Marker>
 
-        {(rideStatus === 'EN_ROUTE_TO_PICKUP' || rideStatus === 'ARRIVED_AT_PICKUP') && (
+        {(currentStatus === 'heading_to_pickup' || currentStatus === 'arrived') && (
           <Marker
-            coordinate={rideDetails.pickupLocation}
+            coordinate={pickupLocation}
             title="Pickup"
-            description={rideDetails.pickupLocation.address}
+            description={pickupLocation.address}
             identifier="pickup"
           >
             <View style={styles.endpointMarker}>
@@ -321,11 +360,11 @@ export function ActiveRideScreen({
           </Marker>
         )}
 
-        {(rideStatus === 'EN_ROUTE_TO_DESTINATION' || rideStatus === 'COMPLETED') && (
+        {(currentStatus === 'in_progress' || currentStatus === 'completed') && (
           <Marker
-            coordinate={rideDetails.dropoffLocation}
+            coordinate={dropoffLocation}
             title="Dropoff"
-            description={rideDetails.dropoffLocation.address}
+            description={dropoffLocation.address}
             identifier="dropoff"
           >
             <View style={styles.endpointMarker}>
@@ -334,12 +373,8 @@ export function ActiveRideScreen({
           </Marker>
         )}
 
-        {rideStatus === 'EN_ROUTE_TO_PICKUP' && console.log('[ActiveRide] Pickup point:', rideDetails.pickupLocation)}
-        {(rideStatus === 'EN_ROUTE_TO_DESTINATION' || rideStatus === 'COMPLETED') && console.log('[ActiveRide] Dropoff point:', rideDetails.dropoffLocation)}
-
         {showRoute && routeOrigin && googleApiKey && (
           <MapViewDirections
-            key={rideStatus}
             origin={routeOrigin}
             destination={routeDestination}
             apikey={googleApiKey}
@@ -353,7 +388,6 @@ export function ActiveRideScreen({
                   distance: result.distance,
                   duration: result.duration,
                 });
-                fitMapToRoute([routeOrigin, routeDestination]);
               }
             }}
             onError={(error) => console.warn('Directions error:', error)}
@@ -368,10 +402,10 @@ export function ActiveRideScreen({
       )}
 
       <View style={[styles.bottomCard, { backgroundColor: theme.surface }]}>
-        {rideStatus === 'EN_ROUTE_TO_PICKUP' && renderPickupCard()}
-        {rideStatus === 'ARRIVED_AT_PICKUP' && renderArrivedCard()}
-        {rideStatus === 'EN_ROUTE_TO_DESTINATION' && renderDestinationCard()}
-        {rideStatus === 'COMPLETED' && renderCompletedCard()}
+        {currentStatus === 'heading_to_pickup' && renderPickupCard()}
+        {currentStatus === 'arrived' && renderArrivedCard()}
+        {currentStatus === 'in_progress' && renderDestinationCard()}
+        {currentStatus === 'completed' && renderCompletedCard()}
       </View>
     </View>
   );
@@ -430,21 +464,6 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
     paddingBottom: Spacing.three,
   },
-  cardHeader: {
-    gap: Spacing.one,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  cardSubtitle: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    marginVertical: Spacing.two,
-  },
   compactTop: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -458,8 +477,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   compactRoute: { flex: 1, gap: 1 },
-  compactPoint: { fontSize: 13, fontWeight: 700 },
-  compactArrow: { fontSize: 12, fontWeight: 700, marginVertical: 1 },
+  compactPoint: { fontSize: 13, fontWeight: '700' },
+  compactArrow: { fontSize: 12, fontWeight: '700', marginVertical: 1 },
   compactMeta: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -468,88 +487,10 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   metaItem: { flex: 1, gap: 1 },
-  metaLabel: { fontSize: 10, fontWeight: 600, opacity: 0.85 },
-  metaValue: { fontSize: 12, fontWeight: 600 },
-  metaContact: { fontSize: 11, fontWeight: 500 },
-  customerSection: {
-    gap: Spacing.one,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  customerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  customerInfo: {
-    flex: 1,
-    gap: Spacing.one,
-  },
-  customerName: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  callRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-  },
-  phoneText: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  customerEmail: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  etaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    marginTop: Spacing.two,
-  },
-  etaText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  distanceText: {
-    fontSize: 13,
-    fontWeight: '500',
-    marginLeft: Spacing.two,
-  },
+  metaLabel: { fontSize: 10, fontWeight: '600', opacity: 0.85 },
+  metaValue: { fontSize: 12, fontWeight: '600' },
+  metaContact: { fontSize: 11, fontWeight: '500' },
   primaryButton: {
     marginTop: Spacing.two,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  completedContainer: {
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  completedTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  completedSubtitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
   },
 });

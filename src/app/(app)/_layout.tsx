@@ -1,13 +1,12 @@
 // src/app/(app)/_layout.tsx
-import { Tabs } from 'expo-router';
-import { useEffect } from 'react';
-import Constants from 'expo-constants';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import Constants from 'expo-constants';
+import { Tabs, router } from 'expo-router';
+import { useEffect, useRef } from 'react';
 
-import { router } from 'expo-router';
-import { useThemeMode } from '@/theme/theme-context';
 import { Spacing } from '@/constants/theme';
 import { registerPushToken } from '@/lib/push';
+import { useThemeMode } from '@/theme/theme-context';
 
 // Remote push was removed from Expo Go in SDK 53+; skip it there so the app
 // (and its route tree) never crashes.
@@ -17,18 +16,30 @@ const IS_EXPO_GO =
 
 export default function AppLayout() {
   const { colors } = useThemeMode();
+  const didForceHome = useRef(false);
 
+  // 1. Force App to start at Home Tab on fresh launch/restart
   useEffect(() => {
-    // Register / refresh the Expo push token once the driver is signed in.
+    if (!didForceHome.current) {
+      didForceHome.current = true;
+      requestAnimationFrame(() => {
+        router.replace('/(app)/(home)');
+      });
+    }
+  }, []);
+
+  // 2. Register / refresh Expo push token once driver is signed in
+  useEffect(() => {
     if (IS_EXPO_GO) return;
     registerPushToken().catch(() => {});
   }, []);
 
+  // 3. Handle Push Notification Taps (Deep Linking)
   useEffect(() => {
-    // Tapping a push notification with a booking_id deep-links to that ride.
     if (IS_EXPO_GO) return;
     let sub: { remove: () => void } | undefined;
     let cancelled = false;
+
     (async () => {
       try {
         const Notifications = await import('expo-notifications');
@@ -43,6 +54,7 @@ export default function AppLayout() {
         /* push not available in this environment */
       }
     })();
+
     return () => {
       cancelled = true;
       sub?.remove();
@@ -51,10 +63,11 @@ export default function AppLayout() {
 
   return (
     <Tabs
+      initialRouteName="(home)"
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.brand,
-        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarActiveTintColor: colors.tabBarIcon,
+        tabBarInactiveTintColor: colors.tabBarIcon,
         tabBarShowLabel: false,
         tabBarStyle: {
           position: 'absolute',
@@ -63,7 +76,7 @@ export default function AppLayout() {
           right: Spacing.four,
           height: 64,
           borderRadius: 32,
-          backgroundColor: '#0A2647',
+          backgroundColor: colors.tabBarBackground,
           borderTopColor: 'transparent',
           borderTopWidth: 0,
           borderCurve: 'continuous',

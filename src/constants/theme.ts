@@ -26,6 +26,8 @@ export const Colors = {
     warningSoft: '#FEF3C7',
     danger: '#DC2626',
     dangerSoft: '#FEE2E2',
+    tabBarBackground: '#F0C75E',
+    tabBarIcon: '#10375C',
   },
   dark: {
     text: '#F5F4F0',            // Off-white text
@@ -46,6 +48,8 @@ export const Colors = {
     warningSoft: '#2C2311',
     danger: '#F87171',
     dangerSoft: '#2D1919',
+    tabBarBackground: '#10375C',
+    tabBarIcon: '#F0C75E',
   },
 } as const;
 
