@@ -3,9 +3,10 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   StyleSheet,
   Text,
-  View
+  View,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
@@ -70,49 +71,64 @@ export function ActiveRideScreen({
   const customerPhone = (b.customer_phone as string) || (b.customer?.phone as string) || null;
   const customerEmail = (b.customer_email as string) || (b.customer?.email as string) || null;
 
-  // Track Driver GPS Location
-  useEffect(() => {
-    let active = true;
+   // Track Driver GPS Location
+   useEffect(() => {
+     let active = true;
 
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        if (active) {
-          setLocationError('Location permission denied.');
-          setDriverLocation(pickupLocation);
-        }
-        return;
-      }
+     (async () => {
+       try {
+         const { status } = await Location.requestForegroundPermissionsAsync();
+         if (status !== 'granted') {
+           if (active) {
+             setLocationError('Location permission denied.');
+             setDriverLocation(pickupLocation);
+           }
+           return;
+         }
 
-      try {
-        const initial = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-        if (active) {
-          setDriverLocation({
-            latitude: initial.coords.latitude,
-            longitude: initial.coords.longitude,
-          });
-        }
-      } catch {
-        if (active) {
-          setDriverLocation(pickupLocation);
-        }
-      }
+         try {
+           const initial = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+           if (active) {
+             setDriverLocation({
+               latitude: initial.coords.latitude,
+               longitude: initial.coords.longitude,
+             });
+           }
+         } catch {
+           if (active) {
+             setDriverLocation(pickupLocation);
+           }
+         }
 
-      watchRef.current = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.High, timeInterval: 3000, distanceInterval: 10 },
-        (loc) => {
-          if (loc.coords.latitude === 0 && loc.coords.longitude === 0) return;
-          setDriverLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
-        }
-      );
-    })();
+         try {
+           watchRef.current = await Location.watchPositionAsync(
+             { accuracy: Location.Accuracy.High, timeInterval: 3000, distanceInterval: 10 },
+             (loc) => {
+               if (loc.coords.latitude === 0 && loc.coords.longitude === 0) return;
+               setDriverLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+             }
+           );
+         } catch (watchErr) {
+           console.warn('watchPositionAsync failed (location settings unsatisfied):', watchErr);
+           if (active) {
+             setLocationError('Location tracking unavailable. Check your device GPS settings.');
+           }
+         }
+       } catch (permErr) {
+         console.warn('requestForegroundPermissionsAsync failed (location settings unsatisfied):', permErr);
+         if (active) {
+           setLocationError('Location access unavailable. Check your device GPS settings.');
+           setDriverLocation(pickupLocation);
+         }
+       }
+     })();
 
-    return () => {
-      active = false;
-      watchRef.current?.remove();
-      watchRef.current = null;
-    };
-  }, [booking.booking_id]);
+     return () => {
+       active = false;
+       watchRef.current?.remove();
+       watchRef.current = null;
+     };
+   }, [booking.booking_id, pickupLocation]);
 
   const fitMapToRoute = useCallback(
     (coords: { latitude: number; longitude: number }[]) => {
@@ -167,6 +183,48 @@ export function ActiveRideScreen({
       setIsSubmitting(false);
     }
   }, [onStatusChange, onRideComplete, booking.driver_status]);
+
+  // 3. Confirmation Dialog Handler
+  const confirmAndTransition = (nextStatus: DriverStatus) => {
+    let title = '';
+    let message = '';
+
+    switch (nextStatus) {
+      case 'heading_to_pickup':
+        title = 'Heading to Pickup?';
+        message = 'Are you sure you want to start heading towards the pickup location?';
+        break;
+      case 'arrived':
+        title = 'Confirm Arrival?';
+        message = 'Are you sure you have arrived at the pickup location?';
+        break;
+      case 'in_progress':
+        title = 'Start Ride?';
+        message = 'Has the passenger boarded? Confirm to start the trip.';
+        break;
+      case 'completed':
+        title = 'Complete Ride?';
+        message = 'Are you sure you want to mark this ride as completed?';
+        break;
+      default:
+        handleStatusTransition(nextStatus);
+        return;
+    }
+
+    Alert.alert(
+      title,
+      message,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Confirm',
+          style: 'default',
+          onPress: () => handleStatusTransition(nextStatus),
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   const currentLocation = driverLocation ?? pickupLocation;
   const showRoute = currentStatus === 'heading_to_pickup' || currentStatus === 'in_progress';
@@ -227,7 +285,7 @@ export function ActiveRideScreen({
       <Button
         title={isSubmitting ? "Updating..." : "Mark as Arrived"}
         disabled={isSubmitting}
-        onPress={() => handleStatusTransition('arrived')}
+        onPress={() => confirmAndTransition('arrived')}
         style={styles.primaryButton}
       />
     </>
@@ -270,7 +328,7 @@ export function ActiveRideScreen({
       <Button
         title={isSubmitting ? "Starting..." : "Start Ride"}
         disabled={isSubmitting}
-        onPress={() => handleStatusTransition('in_progress')}
+        onPress={() => confirmAndTransition('in_progress')}
         style={styles.primaryButton}
       />
     </>
@@ -304,7 +362,7 @@ export function ActiveRideScreen({
       <Button
         title={isSubmitting ? "Completing..." : "Complete Ride"}
         disabled={isSubmitting}
-        onPress={() => handleStatusTransition('completed')}
+        onPress={() => confirmAndTransition('completed')}
         style={styles.primaryButton}
       />
     </>

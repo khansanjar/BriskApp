@@ -1,14 +1,42 @@
 // src/app/(app)/(notifications)/index.tsx
-import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { memo, useCallback, useEffect, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Spacing, BottomTabInset } from '@/constants/theme';
-import { formatDateTime } from '@/lib/format';
-import { getNotifications, markNotificationRead, type Notification as AppNotification } from '@/lib/api';
+import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { getNotifications, markNotificationRead, type Notification as AppNotification } from '@/lib/api';
+import { formatDateTime } from '@/lib/format';
+
+// OPTIMIZATION 1: Extracted and memoized NotificationCard component
+type NotificationCardProps = {
+  item: AppNotification;
+  onPress: (item: AppNotification) => void;
+  theme: ReturnType<typeof useTheme>;
+};
+
+const NotificationCard = memo(function NotificationCard({
+  item,
+  onPress,
+  theme,
+}: NotificationCardProps) {
+  return (
+    <Pressable onPress={() => onPress(item)}>
+      <Card style={[styles.card, { opacity: item.is_read ? 0.6 : 1 }]}>
+        <View style={styles.row}>
+          <Text style={[styles.title, { color: theme.text }]}>{item.title}</Text>
+          {!item.is_read ? <View style={[styles.dot, { backgroundColor: theme.brand }]} /> : null}
+        </View>
+        <Text style={[styles.body, { color: theme.textSecondary }]}>{item.body}</Text>
+        <Text style={[styles.time, { color: theme.textSecondary }]}>
+          {formatDateTime(item.created_at)}
+        </Text>
+      </Card>
+    </Pressable>
+  );
+});
 
 export default function NotificationsScreen() {
   const theme = useTheme();
@@ -50,7 +78,7 @@ export default function NotificationsScreen() {
     }
   }, [load]);
 
-  const handlePress = async (n: AppNotification) => {
+  const handlePress = useCallback(async (n: AppNotification) => {
     if (!n.is_read) {
       try {
         await markNotificationRead(n.id);
@@ -62,21 +90,14 @@ export default function NotificationsScreen() {
     if (n.data?.booking_id) {
       router.push(`/(app)/(bookings)/booking/${n.data.booking_id}`);
     }
-  };
+  }, []);
 
-  const renderItem = ({ item }: { item: AppNotification }) => (
-    <Pressable onPress={() => handlePress(item)}>
-      <Card style={[styles.card, { opacity: item.is_read ? 0.6 : 1 }]}>
-        <View style={styles.row}>
-          <Text style={[styles.title, { color: theme.text }]}>{item.title}</Text>
-          {!item.is_read ? <View style={[styles.dot, { backgroundColor: theme.brand }]} /> : null}
-        </View>
-        <Text style={[styles.body, { color: theme.textSecondary }]}>{item.body}</Text>
-        <Text style={[styles.time, { color: theme.textSecondary }]}>
-          {formatDateTime(item.created_at)}
-        </Text>
-      </Card>
-    </Pressable>
+  // OPTIMIZATION 2: Stable renderItem returning memoized item component
+  const renderItem = useCallback(
+    ({ item }: { item: AppNotification }) => (
+      <NotificationCard item={item} onPress={handlePress} theme={theme} />
+    ),
+    [handlePress, theme]
   );
 
   return (
@@ -86,6 +107,10 @@ export default function NotificationsScreen() {
       data={items}
       keyExtractor={(item) => String(item.id)}
       renderItem={renderItem}
+      initialNumToRender={8}
+      maxToRenderPerBatch={5}
+      windowSize={5}
+      removeClippedSubviews={true}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.brand} />
       }
@@ -114,7 +139,7 @@ const styles = StyleSheet.create({
   listEmpty: { flexGrow: 1, justifyContent: 'center' },
   card: { marginBottom: Spacing.two },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 16, fontWeight: 700, flexShrink: 1 },
+  title: { fontSize: 16, fontWeight: '700', flexShrink: 1 },
   body: { fontSize: 14, marginTop: 4, lineHeight: 20 },
   time: { fontSize: 12, marginTop: 6 },
   dot: { width: 8, height: 8, borderRadius: 4, marginLeft: Spacing.two },

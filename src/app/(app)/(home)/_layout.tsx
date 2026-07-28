@@ -27,7 +27,7 @@ export default function HomeLayout() {
           contentStyle: { backgroundColor: theme.background },
         }}
       />
-      <Stack.Screen
+      {/* <Stack.Screen
         name="booking/heading-to-pickup/[id]"
         options={{
           title: 'Heading to Pickup',
@@ -38,7 +38,7 @@ export default function HomeLayout() {
           headerTitleStyle: { color: theme.text, fontWeight: '700' as const },
           contentStyle: { backgroundColor: theme.background },
         }}
-      />
+      /> */}
     </Stack>
   );
 }

@@ -1,3 +1,4 @@
+import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { type ComponentProps } from 'react';
@@ -12,7 +13,24 @@ import type { Booking } from '@/lib/api';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
-export function BookingCard({
+type MetaProps = {
+  icon: IoniconName;
+  text: string;
+  theme: ReturnType<typeof useTheme>;
+};
+
+function Meta({ icon, text, theme }: MetaProps) {
+  return (
+    <View style={styles.meta}>
+      <Ionicons name={icon} size={14} color={theme.textSecondary} />
+      <Text style={[styles.metaText, { color: theme.textSecondary }]}>{text}</Text>
+    </View>
+  );
+}
+
+const MemoizedMeta = memo(Meta);
+
+export const BookingCard = memo(function BookingCard({
   booking,
   onPress,
 }: {
@@ -43,9 +61,11 @@ export function BookingCard({
         </View>
 
         <View style={styles.metaRow}>
-          <Meta icon="calendar-outline" text={formatDate(booking.pickup_date)} />
-          <Meta icon="time-outline" text={formatTime(booking.pickup_time)} />
-          {booking.vehicle_type ? <Meta icon="car-outline" text={booking.vehicle_type} /> : null}
+          <MemoizedMeta icon="calendar-outline" text={formatDate(booking.pickup_date)} theme={theme} />
+          <MemoizedMeta icon="time-outline" text={formatTime(booking.pickup_time)} theme={theme} />
+          {booking.vehicle_type ? (
+            <MemoizedMeta icon="car-outline" text={booking.vehicle_type} theme={theme} />
+          ) : null}
         </View>
 
         <View style={[styles.footer, { borderTopColor: theme.border }]}>
@@ -66,17 +86,7 @@ export function BookingCard({
       </Card>
     </Pressable>
   );
-}
-
-function Meta({ icon, text }: { icon: IoniconName; text: string }) {
-  const theme = useTheme();
-  return (
-    <View style={styles.meta}>
-      <Ionicons name={icon} size={14} color={theme.textSecondary} />
-      <Text style={[styles.metaText, { color: theme.textSecondary }]}>{text}</Text>
-    </View>
-  );
-}
+});
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.92 },

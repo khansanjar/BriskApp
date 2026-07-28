@@ -1,5 +1,3 @@
-// app.config.js
-
 const googleApiKey = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
 
 module.exports = {
@@ -14,18 +12,23 @@ module.exports = {
       bundleIdentifier: "com.brisktransfers.driver",
       deploymentTarget: "16.4",
       infoPlist: {
+        UIBackgroundModes: ["location", "fetch"],
         NSLocationWhenInUseUsageDescription:
           "Your location is used to provide live tracking and accurate pick-up points for customers while you are active on the app.",
         NSLocationAlwaysAndWhenInUseUsageDescription:
           "Continuous background location access is required to ensure seamless trip tracking and navigation updates for the customer, even when the screen is locked.",
+        NSLocationAlwaysUsageDescription:
+          "Continuous background location access is required for live trip tracking.",
       },
     },
     android: {
       package: "com.brisktransfers.driver",
       permissions: [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
         "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
       ],
       config: {
         googleMaps: {
@@ -35,9 +38,18 @@ module.exports = {
     },
     plugins: [
       "expo-secure-store",
-      "expo-location",
+      "expo-task-manager",
       "expo-notifications",
       "expo-web-browser",
+      [
+        "expo-location",
+        {
+          locationAlwaysAndWhenInUsePermission:
+            "Continuous background location access is required to ensure seamless trip tracking and navigation updates.",
+          isAndroidBackgroundLocationEnabled: true,
+          isAndroidForegroundServiceEnabled: true
+        }
+      ],
       [
         "react-native-maps",
         {

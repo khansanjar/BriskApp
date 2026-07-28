@@ -1,9 +1,10 @@
 // src/app/(app)/(home)/index.tsx
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState, type ComponentProps } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Modal,
   Pressable,
   RefreshControl,
@@ -14,14 +15,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { StatusBadge } from '@/components/ui/status-badge';
 import { RideMap } from '@/components/RideMap';
 import { Avatar } from '@/components/ui/avatar';
-import { Spacing, DriverStatusMeta } from '@/constants/theme';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { DriverStatusMeta, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getDashboard, type Booking, type DashboardData, type User } from '@/lib/api';
-import { formatCurrency, formatTime } from '@/lib/format';
 import { isRideMissed } from '@/lib/booking-status';
+import { formatCurrency, formatTime } from '@/lib/format';
 import { getUser } from '@/lib/storage';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
@@ -38,6 +39,28 @@ function localKey(offsetDays: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// 12-Hour Time Formatter
+function format12HourTime(timeStr: string): string {
+  if (!timeStr) return '';
+  const dateObj = new Date(timeStr);
+  if (!Number.isNaN(dateObj.getTime())) {
+    return dateObj.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})/);
+  if (match) {
+    let hour = parseInt(match[1], 10);
+    const minute = match[2];
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12 || 12;
+    return `${hour}:${minute} ${ampm}`;
+  }
+  return timeStr;
+}
+
 const todayKey = localKey(0);
 
 export default function DashboardScreen() {
@@ -48,6 +71,9 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAllRides, setShowAllRides] = useState(false);
+
+  // Blinking animation for Red Neon Next Ride
+  const blinkAnim = useRef(new Animated.Value(1)).current;
 
   const load = useCallback(async () => {
     try {
@@ -83,14 +109,6 @@ export default function DashboardScreen() {
     }, [load])
   );
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }, [load]);
-
-  const openBooking = (id: number) => router.push(`/(app)/(home)/booking/${id}`);
-
   const upcoming = data?.upcoming_bookings ?? [];
   const todayRides = upcoming.filter((b) => dateKey(b.pickup_date) === todayKey);
   const dayEarnings = data?.earnings?.today;
@@ -102,6 +120,36 @@ export default function DashboardScreen() {
 
   const featured = activeToday ?? assignedToday[0] ?? null;
   const nextRide = assignedToday[0] ?? null;
+
+  // Red Neon Blinking loop trigger
+  useEffect(() => {
+    if (nextRide) {
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(blinkAnim, {
+            toValue: 0.15,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(blinkAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animation.start();
+      return () => animation.stop();
+    }
+  }, [nextRide, blinkAnim]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
+
+  const openBooking = (id: number) => router.push(`/(app)/(home)/booking/${id}`);
 
   return (
     <View style={styles.root}>
@@ -119,9 +167,16 @@ export default function DashboardScreen() {
             <Text style={[styles.greetingText, { color: theme.text }]}>
               Hi {user?.user_fname ?? 'Driver'}
             </Text>
-            <Text style={[styles.greetingSub, { color: theme.textSecondary }]}>
-              {nextRide ? `Next ride ${formatTime(nextRide.pickup_time)}` : 'You are online'}
-            </Text>
+
+            {nextRide ? (
+              <Animated.Text style={[styles.neonText, { opacity: blinkAnim }]}>
+                Next ride {format12HourTime(nextRide.pickup_time)}
+              </Animated.Text>
+            ) : (
+              <Text style={[styles.greetingSub, { color: theme.textSecondary }]}>
+                You are online
+              </Text>
+            )}
           </View>
           <Avatar
             firstName={user?.user_fname}
@@ -331,8 +386,19 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   greetingCopy: { flex: 1 },
-  greetingText: { fontSize: 22, fontWeight: 800 },
-  greetingSub: { fontSize: 14, fontWeight: 500, marginTop: 2 },
+  greetingText: { fontSize: 22, fontWeight: '800' },
+  greetingSub: { fontSize: 14, fontWeight: '500', marginTop: 2 },
+
+  // Red Neon Blinking Styling
+  neonText: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FF0033',
+    marginTop: 2,
+    textShadowColor: '#ff2600',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+  },
 
   bottomCardsContainer: {
     position: 'absolute',
@@ -345,6 +411,7 @@ const styles = StyleSheet.create({
   },
   earningsCard: {
     flexDirection: 'row',
+    // justifyContent:"center",
     alignItems: 'center',
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.four,
@@ -357,8 +424,8 @@ const styles = StyleSheet.create({
   },
   earningsCol: { flex: 1, gap: 2 },
   earningsDivider: { width: 1, opacity: 0.3, marginHorizontal: Spacing.three },
-  earningsLabel: { fontSize: 11, fontWeight: 600, opacity: 0.85 },
-  earningsAmount: { fontSize: 20, fontWeight: 800, lineHeight: 24 },
+  earningsLabel: { fontSize: 11, fontWeight: '600', opacity: 0.85 },
+  earningsAmount: { fontSize: 20, fontWeight: '800', lineHeight: 24 },
 
   activeRideCard: {
     borderRadius: 20,
@@ -383,8 +450,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   activeRideCopy: { flex: 1, gap: 1 },
-  activeRideTitle: { fontSize: 13, fontWeight: 700 },
-  activeRideStatus: { fontSize: 11, fontWeight: 500 },
+  activeRideTitle: { fontSize: 13, fontWeight: '700' },
+  activeRideStatus: { fontSize: 11, fontWeight: '500' },
 
   upcomingCard: {
     borderRadius: 20,
@@ -403,8 +470,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: Spacing.one,
   },
-  upcomingTitle: { fontSize: 14, fontWeight: 700 },
-  viewAll: { fontSize: 13, fontWeight: 600 },
+  upcomingTitle: { fontSize: 14, fontWeight: '700' },
+  viewAll: { fontSize: 15, fontWeight: '600' },
 
   compactCard: {
     borderRadius: 16,
@@ -425,8 +492,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   compactRoute: { flex: 1, gap: 2 },
-  compactPoint: { fontSize: 14, fontWeight: 700 },
-  compactArrow: { fontSize: 12, fontWeight: 700, marginVertical: 2 },
+  compactPoint: { fontSize: 14, fontWeight: '700' },
+  compactArrow: { fontSize: 12, fontWeight: '700', marginVertical: 2 },
   compactMeta: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -457,7 +524,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 15,
-    fontWeight: 700,
+    fontWeight: '700',
   },
   emptyDescription: {
     fontSize: 13,
@@ -468,7 +535,7 @@ const styles = StyleSheet.create({
 
   pressed: { opacity: 0.92 },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: { fontSize: 13, fontWeight: 500 },
+  metaText: { fontSize: 13, fontWeight: '500' },
 
   modalOverlay: {
     flex: 1,
@@ -489,7 +556,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.three,
   },
-  modalTitle: { fontSize: 20, fontWeight: 800 },
+  modalTitle: { fontSize: 20, fontWeight: '800' },
   modalClose: {
     width: 36,
     height: 36,

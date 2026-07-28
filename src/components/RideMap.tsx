@@ -67,32 +67,47 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
   useEffect(() => {
     let active = true;
 
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        if (active) setError('Location permission denied.');
-        return;
-      }
-      try {
-        const initial = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-        if (active) {
-          setDriver({ latitude: initial.coords.latitude, longitude: initial.coords.longitude });
-        }
-      } catch {
-        // Live watch below will populate this shortly; nothing to fall back to here.
-      }
+     (async () => {
+       try {
+         const { status } = await Location.requestForegroundPermissionsAsync();
+         if (status !== 'granted') {
+           if (active) setError('Location permission denied.');
+           return;
+         }
 
-      watchRef.current = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 10 },
-        (loc) => {
-          if (loc.coords.latitude === 0 && loc.coords.longitude === 0) return;
-          if (active) {
-            setDriver({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
-            setError(null);
-          }
-        }
-      );
-    })();
+         try {
+           const initial = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+           if (active) {
+             setDriver({ latitude: initial.coords.latitude, longitude: initial.coords.longitude });
+           }
+         } catch {
+           // Live watch below will populate this shortly; nothing to fall back to here.
+         }
+
+         try {
+           watchRef.current = await Location.watchPositionAsync(
+             { accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 10 },
+             (loc) => {
+               if (loc.coords.latitude === 0 && loc.coords.longitude === 0) return;
+               if (active) {
+                 setDriver({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+                 setError(null);
+               }
+             }
+           );
+         } catch (watchErr) {
+           console.warn('watchPositionAsync failed (location settings unsatisfied):', watchErr);
+           if (active) {
+             setError('Location tracking unavailable. Check your device GPS settings.');
+           }
+         }
+       } catch (permErr) {
+         console.warn('requestForegroundPermissionsAsync failed (location settings unsatisfied):', permErr);
+         if (active) {
+           setError('Location access unavailable. Check your device GPS settings.');
+         }
+       }
+     })();
 
     return () => {
       active = false;

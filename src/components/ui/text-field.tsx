@@ -1,4 +1,4 @@
-import { Text, TextInput, StyleSheet, type TextInputProps, View } from 'react-native';
+import { StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';

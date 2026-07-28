@@ -1,6 +1,6 @@
 // src/app/(app)/(bookings)/index.tsx
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useFocusEffect, router } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
@@ -13,9 +13,9 @@ import {
 
 import { BookingCard } from '@/components/booking-card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Spacing, BottomTabInset } from '@/constants/theme';
-import { getBookings, type Booking, type BookingsType } from '@/lib/api';
+import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { getBookings, type Booking, type BookingsType } from '@/lib/api';
 
 const TABS: { key: BookingsType; label: string }[] = [
   { key: 'upcoming', label: 'Upcoming' },
@@ -24,6 +24,11 @@ const TABS: { key: BookingsType; label: string }[] = [
 ];
 
 const PAGE_LIMIT = 10;
+
+// Top-level component declaration: Prevents function re-creation on every render
+function ListSeparator() {
+  return <View style={styles.separator} />;
+}
 
 export default function BookingsListScreen() {
   const theme = useTheme();
@@ -103,10 +108,17 @@ export default function BookingsListScreen() {
     }
   }, [loadingMore, page, lastPage, load]);
 
-  const openBooking = (id: number) => router.push(`/(app)/(bookings)/booking/${id}`);
+  // OPTIMIZATION 1: Wrapped openBooking in useCallback so reference stays stable
+  const openBooking = useCallback((id: number) => {
+    router.push(`/(app)/(bookings)/booking/${id}`);
+  }, []);
 
-  const renderItem = ({ item }: { item: Booking }) => (
-    <BookingCard booking={item} onPress={() => openBooking(item.booking_id)} />
+  // OPTIMIZATION 2: renderItem now has a truly stable dependency array
+  const renderItem = useCallback(
+    ({ item }: { item: Booking }) => (
+      <BookingCard booking={item} onPress={() => openBooking(item.booking_id)} />
+    ),
+    [openBooking]
   );
 
   const displayItems = items;
@@ -146,7 +158,11 @@ export default function BookingsListScreen() {
         data={displayItems}
         keyExtractor={(item) => String(item.booking_id)}
         renderItem={renderItem}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={ListSeparator}
+        initialNumToRender={6}
+        maxToRenderPerBatch={5}
+        windowSize={5}
+        removeClippedSubviews={true}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.brand} />
         }
