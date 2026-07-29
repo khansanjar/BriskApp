@@ -393,9 +393,9 @@ const styles = StyleSheet.create({
   neonText: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#FF0033',
+    color: '#ff0000c0',
     marginTop: 2,
-    textShadowColor: '#ff2600',
+    // textShadowColor: '#ff2600',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 8,
   },

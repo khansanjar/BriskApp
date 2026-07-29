@@ -1,4 +1,4 @@
-import { Linking, Pressable, StyleSheet, Text, View, Modal } from 'react-native';
+import { Alert, Linking, Pressable, StyleSheet, Text, View, Modal } from 'react-native';
 import { useState } from 'react';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { type ComponentProps } from 'react';
@@ -76,6 +76,22 @@ export function BookingDetail({
   function handleCancelDismiss() {
     setShowCancelConfirm(false);
     setCancelReason('');
+  }
+
+  function handleStatusPress(status: DriverStatus) {
+    if (status === 'heading_to_pickup') {
+      Alert.alert(
+        'Head to pickup?',
+        'Are you sure you want to start heading towards the pickup location?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Yes, Head there', onPress: () => onUpdate(status) },
+        ],
+        { cancelable: true }
+      );
+      return;
+    }
+    onUpdate(status);
   }
 
   return (
@@ -180,16 +196,16 @@ export function BookingDetail({
         </Card>
       ) : (
         <View style={styles.actions}>
-          {next.map((item, index) => (
-            <Button
-              key={item.value}
-              title={item.label}
-              variant={index === 0 ? 'primary' : 'secondary'}
-              loading={updating}
-              onPress={() => onUpdate(item.value)}
-              style={next.length > 1 ? styles.actionButton : null}
-            />
-          ))}
+{next.map((item, index) => (
+              <Button
+                key={item.value}
+                title={item.label}
+                variant={index === 0 ? 'primary' : 'secondary'}
+                loading={updating}
+                onPress={() => handleStatusPress(item.value)}
+                style={next.length > 1 ? styles.actionButton : null}
+              />
+            ))}
 
           {booking.driver_status === 'assigned' && !showCancelConfirm ? (
             <Button
