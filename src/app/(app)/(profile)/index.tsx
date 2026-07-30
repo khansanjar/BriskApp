@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import * as Updates from 'expo-updates';
+import Constants from 'expo-constants';
 
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -103,6 +105,22 @@ export default function ProfileScreen() {
             </Pressable>
           </>
         )}
+      </Card>
+
+      <Card style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>App Info</Text>
+        <View style={styles.infoRow}>
+          <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Version</Text>
+          <Text style={[styles.infoValue, { color: theme.text }]}>
+            {Constants.expoConfig?.version ?? '1.0.0'}
+          </Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Update ID</Text>
+          <Text style={[styles.infoValue, { color: theme.text }]}>
+            {Updates.updateId ?? 'N/A'}
+          </Text>
+        </View>
       </Card>
 
       <Card style={styles.card}>

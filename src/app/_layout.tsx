@@ -1,13 +1,14 @@
 // src/app/_layout.tsx — Root layout (Expo Router entry)
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Updates from 'expo-updates';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AuthProvider, useAuth } from '@/context/auth';
 import { Spacing } from '@/constants/theme';
+import { AuthProvider, useAuth } from '@/context/auth';
 import { ThemeModeProvider, useThemeMode } from '@/theme/theme-context';
 
 SplashScreen.preventAutoHideAsync();
@@ -17,9 +18,11 @@ function SplashFallback() {
   const { colors } = useThemeMode();
   return (
     <SafeAreaView style={[styles.splash, { backgroundColor: colors.brand }]}>
-      <ActivityIndicator color={colors.brandText} size="large" />
+      <View style={styles.logoContainer}>
+        <Image source={require('@/assets/images/icon.png')} style={styles.logo} resizeMode="contain" />
+      </View>
       <View style={{ height: Spacing.three }} />
-      <Text style={[styles.splashText, { color: colors.brandText }]}>Brisk Transfers</Text>
+      <ActivityIndicator color={colors.brandText} size="large" />
     </SafeAreaView>
   );
 }
@@ -27,6 +30,8 @@ function SplashFallback() {
 function RootNavigator() {
   const { session, isLoading } = useAuth();
   const { resolvedScheme } = useThemeMode();
+  const [updateCheckDone, setUpdateCheckDone] = useState(false);
+  const didStartCheck = useRef(false);
 
   useEffect(() => {
     if (!isLoading) {
@@ -34,9 +39,37 @@ function RootNavigator() {
     }
   }, [isLoading]);
 
+  useEffect(() => {
+    if (isLoading || didStartCheck.current) return;
+    didStartCheck.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (!cancelled && update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          if (!cancelled) {
+            await Updates.reloadAsync();
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching latest Expo update:', error);
+      } finally {
+        if (!cancelled) {
+          setUpdateCheckDone(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoading]);
+
+  const showSplash = isLoading || !updateCheckDone;
+
   return (
     <ThemeProvider value={resolvedScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      {isLoading ? (
+      {showSplash ? (
         <SplashFallback />
       ) : (
         <Stack screenOptions={{ headerShown: false }}>
@@ -68,8 +101,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  splashText: {
-    fontSize: 20,
-    fontWeight: 700,
+  logoContainer: {
+    borderRadius: 20,
+    overflow: 'hidden'
+  },
+  logo: {
+    width: 120,
+    height: 120,
   },
 });
