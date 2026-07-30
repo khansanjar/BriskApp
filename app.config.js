@@ -46,6 +46,7 @@ module.exports = {
       googleServicesFile: "./google-services.json"
     },
     plugins: [
+      "expo-font",
       "expo-secure-store",
       "expo-task-manager",
       "expo-notifications",
