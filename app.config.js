@@ -10,6 +10,12 @@ module.exports = {
     orientation: "portrait",
     userInterfaceStyle: "automatic",
     icon: "./assets/images/icon.png",
+    updates: {
+      url: "https://u.expo.dev/cfca579d-dde5-43a7-af96-77b847178012"
+    },
+    runtimeVersion: {
+      policy: "appVersion"
+    },
     ios: {
       bundleIdentifier: "com.brisktransfers.driver",
       deploymentTarget: "16.4",
