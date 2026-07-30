@@ -36,7 +36,9 @@ export function ActiveRideScreen({
   
   // 1. Local status state for Instant / Smooth UI transition
   const [currentStatus, setCurrentStatus] = useState<DriverStatus>(booking.driver_status);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isArriving, setIsArriving] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const [driverLocation, setDriverLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null);
@@ -162,25 +164,27 @@ export function ActiveRideScreen({
 
   // 2. Optimistic Status Handler
   const handleStatusTransition = useCallback(async (nextStatus: DriverStatus) => {
-    setIsSubmitting(true);
+    if (nextStatus === 'arrived') setIsArriving(true);
+    else if (nextStatus === 'in_progress') setIsStarting(true);
+    else if (nextStatus === 'completed') setIsCompleting(true);
+
     setRouteInfo(null);
 
-    // Instant local UI switch
     setCurrentStatus(nextStatus);
     hasFittedMapRef.current = null;
 
     try {
-      // Call API in background
       await onStatusChange(nextStatus);
       if (nextStatus === 'completed') {
         onRideComplete?.();
       }
     } catch (error) {
-      // Rollback status if backend fails
       setCurrentStatus(booking.driver_status);
       console.error('Failed to change ride status:', error);
     } finally {
-      setIsSubmitting(false);
+      setIsArriving(false);
+      setIsStarting(false);
+      setIsCompleting(false);
     }
   }, [onStatusChange, onRideComplete, booking.driver_status]);
 
@@ -283,8 +287,9 @@ export function ActiveRideScreen({
       )}
 
       <Button
-        title={isSubmitting ? "Updating..." : "Mark as Arrived"}
-        disabled={isSubmitting}
+        title={isArriving ? "Arriving..." : "Mark as Arrived"}
+        loading={isArriving}
+        disabled={isArriving}
         onPress={() => confirmAndTransition('arrived')}
         style={styles.primaryButton}
       />
@@ -326,8 +331,9 @@ export function ActiveRideScreen({
       </View>
 
       <Button
-        title={isSubmitting ? "Starting..." : "Start Ride"}
-        disabled={isSubmitting}
+        title={isStarting ? "Starting Ride..." : "Start Ride"}
+        loading={isStarting}
+        disabled={isStarting}
         onPress={() => confirmAndTransition('in_progress')}
         style={styles.primaryButton}
       />
@@ -360,12 +366,13 @@ export function ActiveRideScreen({
       )}
 
       <Button
-        title={isSubmitting ? "Completing..." : "Complete Ride"}
-        disabled={isSubmitting}
+        title={isCompleting ? "Completing Ride..." : "Complete Ride"}
+        loading={isCompleting}
+        disabled={isCompleting}
         onPress={() => confirmAndTransition('completed')}
         style={styles.primaryButton}
-      />
-    </>
+/>
+     </>
   );
 
   const renderCompletedCard = () => (
@@ -510,9 +517,9 @@ const styles = StyleSheet.create({
   bottomCard: {
     position: 'absolute',
     bottom: BottomTabInset + Spacing.two,
-    left: Spacing.four,
-    right: Spacing.four,
-    borderRadius: 20,
+    left: 0,
+    right: 0,
+    borderRadius: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
@@ -520,7 +527,7 @@ const styles = StyleSheet.create({
     elevation: 6,
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
-    paddingBottom: Spacing.three,
+    paddingBottom: Spacing.four,
   },
   compactTop: {
     flexDirection: 'row',

@@ -1,5 +1,5 @@
 // src/components/ui/button.tsx
-import { ActivityIndicator, Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -44,11 +44,10 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
         pressed && !disabled && !loading ? styles.pressed : null,
         style,
       ]}>
-      {loading ? (
-        <ActivityIndicator color={textColor} />
-      ) : (
+      <View style={styles.contentRow}>
         <Text style={[styles.label, { color: textColor }]}>{title}</Text>
-      )}
+        {loading && <ActivityIndicator color={textColor} style={styles.spinner} />}
+      </View>
     </Pressable>
   );
 }
@@ -62,9 +61,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+  },
+  spinner: {
+    marginLeft: Spacing.two,
+  },
   label: {
     fontSize: 16,
-    fontWeight: 700,
+    fontWeight: '700',
   },
   pressed: {
     opacity: 0.85,

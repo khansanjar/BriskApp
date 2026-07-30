@@ -8,6 +8,7 @@ import { useEffect, useRef } from 'react';
 import { Spacing } from '@/constants/theme';
 import { registerPushToken } from '@/lib/push';
 import { useThemeMode } from '@/theme/theme-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -25,6 +26,7 @@ const IS_EXPO_GO =
 
 export default function AppLayout() {
   const { colors } = useThemeMode();
+  const insets = useSafeAreaInsets();
   const didForceHome = useRef(false);
 
   // 1. Force App to start at Home Tab on fresh launch/restart
@@ -80,11 +82,12 @@ export default function AppLayout() {
         tabBarShowLabel: false,
         tabBarStyle: {
           position: 'absolute',
-          bottom: Spacing.three,
-          left: Spacing.four,
-          right: Spacing.four,
+          left: 0,
+          right: 0,
+          marginHorizontal: Spacing.four,
+          bottom: insets.bottom + 8,
           height: 64,
-          borderRadius: 32,
+          borderRadius: 24,
           backgroundColor: colors.tabBarBackground,
           borderTopColor: 'transparent',
           borderTopWidth: 0,
@@ -95,6 +98,7 @@ export default function AppLayout() {
           shadowRadius: 16,
           elevation: 8,
           paddingBottom: 0,
+          overflow: 'hidden',
         },
         tabBarItemStyle: {
           borderRadius: 24,

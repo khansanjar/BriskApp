@@ -17,38 +17,11 @@ try {
 const LOCATION_TASK_NAME = 'background-location-tracking';
 const QUEUE_KEY = '@pending_location_queue';
 const LOCATION_QUEUE_MAX = 500;
-const DEDUP_THRESHOLD_METERS = 3;
 
 // Cached region string from driver's current location
 let cachedRegion: string | null = null;
 let regionCacheTimestamp: number = 0;
 const REGION_CACHE_DURATION = 5 * 60 * 1000;
-
-let lastSavedLat: number | null = null;
-let lastSavedLng: number | null = null;
-
-/**
- * Calculate the great-circle distance between two coordinates using the Haversine formula.
- * Returns the distance in meters.
- */
-function calculateDistance(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-): number {
-  const R = 6371000;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
 
 type QueuedLocation = {
   lat: number;
@@ -282,18 +255,6 @@ TaskManager?.defineTask?.(LOCATION_TASK_NAME, async ({ data, error }) => {
       speed: loc.coords.speed ?? undefined,
     };
 
-    if (
-      lastSavedLat !== null &&
-      lastSavedLng !== null &&
-      calculateDistance(lastSavedLat, lastSavedLng, loc.coords.latitude, loc.coords.longitude) <
-        DEDUP_THRESHOLD_METERS
-    ) {
-      continue;
-    }
-
-    lastSavedLat = loc.coords.latitude;
-    lastSavedLng = loc.coords.longitude;
-
     console.log('[LocationTracking] Background location update received:', JSON.stringify(point));
 
     try {
@@ -320,14 +281,15 @@ export function useLocationTracking(bookingId: number | null, status: DriverStat
     bookingId != null &&
     (status === 'heading_to_pickup' || status === 'in_progress' || status === 'arrived');
 
-  // Helper 1: Clears existing timer and resets tracking flags safely
-  const stopTracking = () => {
+  // Helper 1: Clears existing timer, resets tracking flags, and stops background service
+  const stopTracking = async () => {
     if (flushIntervalRef.current) {
       clearInterval(flushIntervalRef.current);
       flushIntervalRef.current = null;
     }
     hasStartedRef.current = false;
     setIsTracking(false);
+    await stopBackgroundLocationTracking();
   };
 
   // Helper 2: Centralized function to request permissions, start background task & set interval
@@ -338,7 +300,7 @@ export function useLocationTracking(bookingId: number | null, status: DriverStat
     try {
       const hasLocation = await ensureLocationServicesEnabled();
       if (!hasLocation) {
-        stopTracking();
+        await stopTracking();
         return;
       }
 
@@ -364,13 +326,13 @@ export function useLocationTracking(bookingId: number | null, status: DriverStat
 
       flushIntervalRef.current = setInterval(() => {
         flushPendingLocations(targetBookingId);
-      }, 10000);
+      }, 25000); // 25 seconds interval
 
       setIsTracking(true);
       setError(null);
     } catch (startErr) {
       console.warn('startLocationUpdatesAsync failed:', startErr);
-      stopTracking();
+      await stopTracking();
       setError('Location tracking unavailable. Check your device GPS settings.');
     }
   };
@@ -420,13 +382,19 @@ export function useLocationTracking(bookingId: number | null, status: DriverStat
   return { isTracking, error, openAppSettings };
 }
 
-/**
- * Stops background location updates for the current ride.
- * Call this when the ride is completed or cancelled.
- */
+//  Stops background location updates for the current ride.
+//   Call this when the ride is completed or cancelled.
+ 
 export async function stopBackgroundLocationTracking(): Promise<void> {
   try {
-    await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+    if (TaskManager) {
+      // Check if task is registered before stopping to prevent TaskNotFoundException
+      const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
+      if (isRegistered) {
+        await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+        console.log('[LocationTracking] Background location updates stopped successfully.');
+      }
+    }
   } catch (error) {
     console.warn('Failed to stop background location tracking:', error);
   }
