@@ -141,8 +141,8 @@ export function useBookingCoordinates(
     }
 
     if (promises.length > 0) {
-      Promise.all(promises).catch(() => {
-        /* geocoding failures are silent; UI falls back to address text */
+      Promise.all(promises).catch((error) => {
+        console.warn('[Geocoding Error]:', error);
       });
     }
   }, [booking?.booking_id]); // Triggered only when booking changes

@@ -10,7 +10,8 @@ function isWeb() {
 function webGet(key: string): string | null {
   try {
     return window.localStorage.getItem(key);
-  } catch {
+  } catch (error) {
+    console.warn('[Storage Error]:', error);
     return null;
   }
 }
@@ -18,8 +19,8 @@ function webGet(key: string): string | null {
 function webSet(key: string, value: string) {
   try {
     window.localStorage.setItem(key, value);
-  } catch {
-    /* ignore */
+  } catch (error) {
+    console.warn('[Storage Error]:', error);
   }
 }
 

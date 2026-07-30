@@ -87,8 +87,8 @@ export default function BookingsListScreen() {
     setPage(1);
     try {
       await load(tab, 1, false);
-    } catch {
-      /* surface via list */
+    } catch (error) {
+      console.error('[Bookings Refresh Error]:', error);
     } finally {
       setRefreshing(false);
     }

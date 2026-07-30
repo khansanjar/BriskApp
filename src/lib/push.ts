@@ -34,8 +34,8 @@ export async function registerPushToken(): Promise<void> {
     if (tokenData?.data) {
       await registerDeviceToken(tokenData.data);
     }
-  } catch (e) {
-    console.log(e);
+  } catch (error) {
+    console.warn('[Push Registration Error]:', error);
 
     /* push setup is optional */
   }

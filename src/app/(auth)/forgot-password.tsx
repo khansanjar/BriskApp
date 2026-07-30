@@ -36,8 +36,9 @@ export default function ForgotPasswordScreen() {
     try {
       await forgotPassword(email.trim());
       setSent(true);
-    } catch {
-      setError('Something went wrong. Please try again.');
+    } catch (error) {
+      console.error('[Forgot Password Error]:', error);
+      setError('Failed to send reset link. Please try again.');
     } finally {
       setLoading(false);
     }

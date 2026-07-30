@@ -96,10 +96,11 @@ export function ActiveRideScreen({
                longitude: initial.coords.longitude,
              });
            }
-         } catch {
-           if (active) {
-             setDriverLocation(pickupLocation);
-           }
+          } catch (error) {
+            console.warn('[ActiveRideScreen Location Error]:', error);
+            if (active) {
+              setDriverLocation(pickupLocation);
+            }
          }
 
          try {

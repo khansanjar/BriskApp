@@ -10,7 +10,8 @@ let TaskManager: typeof import('expo-task-manager') | null = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   TaskManager = require('expo-task-manager');
-} catch {
+} catch (error) {
+  console.warn('[LocationTracking TaskManager Error]:', error);
   TaskManager = null;
 }
 
@@ -410,7 +411,8 @@ export async function getPendingLocationCount(): Promise<number> {
     if (!raw) return 0;
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.length : 0;
-  } catch {
+  } catch (error) {
+    console.warn('[LocationTracking Queue Read Error]:', error);
     return 0;
   }
 }

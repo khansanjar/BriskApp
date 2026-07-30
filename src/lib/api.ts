@@ -174,7 +174,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-  } catch {
+  } catch (error) {
+    console.warn('[API Fetch Error]:', error);
     throw new ApiError({
       statusCode: 0,
       message: 'Network error. Please check your connection and try again.',
@@ -184,7 +185,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   let json: any = null;
   try {
     json = await response.json();
-  } catch {
+  } catch (error) {
+    console.warn('[API JSON Parse Error]:', error);
     json = null;
   }
 

@@ -42,7 +42,9 @@ export default function AppLayout() {
   // 2. Register / refresh Expo push token once driver is signed in
   useEffect(() => {
     if (IS_EXPO_GO) return;
-    registerPushToken().catch(() => {});
+    registerPushToken().catch((error) => {
+      console.error('[AppLayout Push Registration Error]:', error);
+    });
   }, []);
 
   // 3. Handle Push Notification Taps (Deep Linking)

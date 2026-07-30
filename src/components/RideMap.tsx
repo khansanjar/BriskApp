@@ -80,9 +80,10 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
            if (active) {
              setDriver({ latitude: initial.coords.latitude, longitude: initial.coords.longitude });
            }
-         } catch {
-           // Live watch below will populate this shortly; nothing to fall back to here.
-         }
+          } catch (error) {
+            console.warn('[RideMap Location Error]:', error);
+            // Live watch below will populate this shortly; nothing to fall back to here.
+          }
 
          try {
            watchRef.current = await Location.watchPositionAsync(
@@ -146,7 +147,8 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
           setRouteCoords([]);
           setRouteUnavailable(true);
         }
-      } catch {
+      } catch (error) {
+        console.warn('[RideMap Route Fetch Error]:', error);
         if (!cancelled) {
           setRouteCoords([]);
           setRouteUnavailable(true);

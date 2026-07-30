@@ -71,8 +71,8 @@ export default function NotificationsScreen() {
     setRefreshing(true);
     try {
       await load();
-    } catch {
-      /* surface via list */
+    } catch (error) {
+      console.error('[Notifications Refresh Error]:', error);
     } finally {
       setRefreshing(false);
     }
@@ -83,8 +83,8 @@ export default function NotificationsScreen() {
       try {
         await markNotificationRead(n.id);
         setItems((prev) => prev.map((i) => (i.id === n.id ? { ...i, is_read: true } : i)));
-      } catch {
-        /* non-fatal */
+      } catch (error) {
+        console.warn('[Mark Notification Read Error]:', error);
       }
     }
     if (n.data?.booking_id) {
