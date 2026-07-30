@@ -387,7 +387,7 @@ export async function declineBooking(
 /* Device & notifications                                               */
 /* ------------------------------------------------------------------ */
 
-export async function registerDeviceToken(expo_push_token: string): Promise<void> {
+export async function  registerDeviceToken(expo_push_token: string): Promise<void> {
   await request('/device-token', {
     method: 'POST',
     body: { expo_push_token },

@@ -1,6 +1,7 @@
 // src/app/(app)/_layout.tsx
 import Ionicons from '@react-native-vector-icons/ionicons';
 import Constants from 'expo-constants';
+import * as Notifications from 'expo-notifications';
 import { Tabs, router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
@@ -8,6 +9,14 @@ import { Spacing } from '@/constants/theme';
 import { registerPushToken } from '@/lib/push';
 import { useThemeMode } from '@/theme/theme-context';
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 // Remote push was removed from Expo Go in SDK 53+; skip it there so the app
 // (and its route tree) never crashes.
 const IS_EXPO_GO =

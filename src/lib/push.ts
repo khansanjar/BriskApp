@@ -1,5 +1,5 @@
-import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 
 import { registerDeviceToken } from '@/lib/api';
@@ -23,14 +23,20 @@ export async function registerPushToken(): Promise<void> {
   try {
     const Notifications = await import('expo-notifications');
     const { status } = await Notifications.requestPermissionsAsync();
+     console.log({ status });
     if (status !== 'granted') {
       return;
     }
-    const tokenData = await Notifications.getExpoPushTokenAsync();
+    const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+    console.log({ tokenData });
+
     if (tokenData?.data) {
       await registerDeviceToken(tokenData.data);
     }
-  } catch {
+  } catch (e) {
+    console.log(e);
+
     /* push setup is optional */
   }
 }

@@ -4,10 +4,12 @@ module.exports = {
   expo: {
     name: "Brisk Transfers Driver",
     slug: "brisktransfers-driver",
+    owner: "brisktransfers",
     scheme: "brisktransfers",
     version: "1.0.0",
     orientation: "portrait",
     userInterfaceStyle: "automatic",
+    icon: "./assets/images/icon.png",
     ios: {
       bundleIdentifier: "com.brisktransfers.driver",
       deploymentTarget: "16.4",
@@ -35,12 +37,26 @@ module.exports = {
           apiKey: googleApiKey,
         },
       },
+      googleServicesFile: "./google-services.json"
     },
     plugins: [
       "expo-secure-store",
       "expo-task-manager",
       "expo-notifications",
       "expo-web-browser",
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/images/splash-icon.png",
+          "dark": {
+            "image": "./assets/images/icon.png",
+            "backgroundColor": "#111111"
+          },
+          "imageWidth": 200
+        }
+      ],
       [
         "expo-location",
         {
@@ -58,5 +74,10 @@ module.exports = {
         },
       ],
     ],
+    "extra": {
+      "eas": {
+        "projectId": "cfca579d-dde5-43a7-af96-77b847178012"
+      }
+    }
   },
 };

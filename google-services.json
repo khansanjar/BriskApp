@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "758692620141",
+    "project_id": "brisktransfersapp",
+    "storage_bucket": "brisktransfersapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:758692620141:android:de51ebaf313cf2f4d71c64",
+        "android_client_info": {
+          "package_name": "com.brisktransfers.driver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDO1JHCBG4vdlmGXFpQyKA3t-J_Uz7-m34"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
