@@ -1,9 +1,9 @@
 // src/app/(app)/(profile)/index.tsx
+import Ionicons from '@react-native-vector-icons/ionicons';
+import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import Ionicons from '@react-native-vector-icons/ionicons';
-import * as Updates from 'expo-updates';
-import Constants from 'expo-constants';
 
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,19 @@ const MODES: { key: ThemeMode; label: string; icon: 'phone-portrait-outline' | '
   { key: 'dark', label: 'Dark', icon: 'moon-outline' },
 ];
 
+// Helper function: Update ID ko mask (hide) karne ke liye
+function formatUpdateId(id?: string | null, startLen = 5, endLen = 5): string {
+  if (!id) return 'N/A';
+  // Agar ID ki length threshold se choti ho toh original dikhayein
+  if (id.length <= startLen + endLen) return id;
+
+  const firstPart = id.slice(0, startLen);
+  const lastPart = id.slice(-endLen);
+  const middleMask = '*'.repeat(id.length - startLen - endLen);
+
+  return `${firstPart}${middleMask}${lastPart}`;
+}
+
 export default function ProfileScreen() {
   const theme = useTheme();
   const { mode, setMode } = useThemeMode();
@@ -38,7 +51,6 @@ export default function ProfileScreen() {
     if (!user) return;
     setSaving(true);
     setError(null);
-    // Partial update — only send the fields the driver actually changed.
     const payload: Partial<Pick<User, 'user_fname' | 'user_lname' | 'userphone'>> = {};
     if (fname !== user.user_fname) payload.user_fname = fname;
     if (lname !== user.user_lname) payload.user_lname = lname;
@@ -118,7 +130,8 @@ export default function ProfileScreen() {
         <View style={styles.infoRow}>
           <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Update ID</Text>
           <Text style={[styles.infoValue, { color: theme.text }]}>
-            {Updates.updateId ?? 'N/A'}
+            {/* Pehle 5 aur Aakhri 5 characters dikhayega, center mein ***** */}
+            {formatUpdateId(Updates.updateId, 5, 10)}
           </Text>
         </View>
       </Card>
