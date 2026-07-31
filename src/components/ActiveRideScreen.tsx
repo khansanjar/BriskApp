@@ -467,7 +467,7 @@ export function ActiveRideScreen({
         </View>
       )}
 
-      <View style={[styles.bottomCard, { backgroundColor: theme.surface }]}>
+      <View style={[styles.bottomCard, { backgroundColor: theme.surface }]} pointerEvents="box-none">
         {currentStatus === 'heading_to_pickup' && renderPickupCard()}
         {currentStatus === 'arrived' && renderArrivedCard()}
         {currentStatus === 'in_progress' && renderDestinationCard()}
@@ -517,12 +517,14 @@ const styles = StyleSheet.create({
   },
   bottomCard: {
     position: 'absolute',
-    bottom: BottomTabInset + Spacing.two,
+    bottom: BottomTabInset + Spacing.three,
     left: 0,
     right: 0,
-    borderRadius: 0,
+    marginHorizontal: 10,
+    borderRadius: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
+    
     shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 6,
