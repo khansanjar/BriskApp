@@ -142,5 +142,5 @@ const styles = StyleSheet.create({
   title: { fontSize: 16, fontWeight: '700', flexShrink: 1 },
   body: { fontSize: 14, marginTop: 4, lineHeight: 20 },
   time: { fontSize: 12, marginTop: 6 },
-  dot: { width: 8, height: 8, borderRadius: 4, marginLeft: Spacing.two },
+  dot: { width: Spacing.half, height: Spacing.half, borderRadius: 4, marginLeft: Spacing.two },
 });

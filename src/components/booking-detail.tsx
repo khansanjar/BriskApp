@@ -113,7 +113,7 @@ export function BookingDetail({
                 {booking.pickup_location}
               </Text>
             </View>
-            <View style={{ height: 12 }} />
+            <View style={{ height: Spacing.six }} />
             <Point color={theme.success} shape="square" label="Drop off" />
             <Line />
             <View style={styles.locationBlock}>
@@ -175,7 +175,7 @@ export function BookingDetail({
           <Text style={[styles.customerFareLabel, { color: theme.textSecondary }]}>
             {booking.vehicle_type ?? 'Ride'}
           </Text>
-          <Text style={[styles.customerFare, { color: theme.text }]}>
+          <Text numberOfLines={1} style={[styles.customerFare, { color: theme.text, flexShrink: 1 }]}>
             {formatCurrency(booking.total_fare)}
           </Text>
         </View>
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   customerFareLabel: { fontSize: 14, fontWeight: 600 },
   customerFare: { fontSize: 18, fontWeight: 800 },
-  callButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  callButton: { width: 44, height: 44, borderRadius: Spacing.three + Spacing.two - Spacing.half, alignItems: 'center', justifyContent: 'center' },
   callText: { fontSize: 14, fontWeight: 700 },
   notes: { fontSize: 14, lineHeight: 20 },
   actions: { gap: Spacing.two },

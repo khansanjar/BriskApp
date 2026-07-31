@@ -106,7 +106,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden'
   },
   logo: {
-    width: 120,
-    height: 120,
+    maxWidth: 120,
+    maxHeight: 120,
+    width: '30%',
+    height: '30%',
   },
 });

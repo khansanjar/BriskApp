@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 16,
     paddingHorizontal: Spacing.three,
-    minHeight: 52,
+    minHeight: Spacing.six + 4,
   },
   input: {
     flex: 1,

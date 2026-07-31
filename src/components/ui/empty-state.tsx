@@ -63,8 +63,10 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.four,
   },
   iconWrap: {
-    width: 72,
-    height: 72,
+    maxWidth: 72,
+    maxHeight: 72,
+    width: '30%',
+    aspectRatio: 1,
     borderRadius: 36,
     borderWidth: 1,
     alignItems: 'center',

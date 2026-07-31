@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.three,
     borderRadius: 14,
     alignItems: 'center',

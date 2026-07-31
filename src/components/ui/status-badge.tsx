@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     gap: 6,
     paddingHorizontal: Spacing.two,
-    paddingVertical: 7,
+    paddingVertical: Spacing.half,
     borderRadius: 999,
   },
   dot: {

@@ -259,8 +259,8 @@ const styles = StyleSheet.create({
   fallback: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   fallbackText: { fontSize: 14, textAlign: 'center' },
   routeBanner: {
-    position: 'absolute', top: 12, left: 12, right: 12, paddingVertical: 8, paddingHorizontal: 12,
-    borderRadius: 10, borderWidth: 1, borderColor: 'rgba(61, 55, 150, 0.15)',
+    position: 'absolute', top: Spacing.two + Spacing.half, left: Spacing.two + Spacing.half, right: Spacing.two + Spacing.half, paddingVertical: Spacing.two, paddingHorizontal: Spacing.three,
+    borderRadius: Spacing.two + Spacing.one + Spacing.half, borderWidth: 1, borderColor: 'rgba(61, 55, 150, 0.15)',
   },
   routeBannerText: { fontSize: 12, fontWeight: '600', textAlign: 'center' },
   userMarker: { alignItems: 'center', justifyContent: 'center' },

@@ -202,7 +202,7 @@ export default function DashboardScreen() {
                   <Text style={[styles.activeRideTitle, { color: theme.text }]} numberOfLines={1}>
                     {activeToday.pickup_location}
                   </Text>
-                  <Text style={[styles.activeRideStatus, { color: theme.textSecondary }]}>
+                  <Text numberOfLines={1} style={[styles.activeRideStatus, { color: theme.textSecondary, flexShrink: 1 }]}>
                     {DriverStatusMeta[activeToday.driver_status]?.label ?? activeToday.driver_status}
                   </Text>
                 </View>
@@ -270,7 +270,7 @@ export default function DashboardScreen() {
                 </View>
               </Pressable>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
               {assignedToday.length === 0 ? (
                 <EmptyStateInline compact icon="car-outline" title="No rides" description="No assigned rides scheduled for today." />
               ) : (
@@ -359,7 +359,7 @@ function Meta({ icon, text }: { icon: IoniconName; text: string }) {
   return (
     <View style={styles.meta}>
       <Ionicons name={icon} size={14} color={theme.textSecondary} />
-      <Text style={[styles.metaText, { color: theme.textSecondary }]}>{text}</Text>
+      <Text numberOfLines={1} style={[styles.metaText, { color: theme.textSecondary, flexShrink: 1 }]}>{text}</Text>
     </View>
   );
 }

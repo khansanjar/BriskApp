@@ -98,12 +98,12 @@ const styles = StyleSheet.create({
   },
   routeWrap: { flex: 1, gap: 10 },
   routePoint: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  pin: { width: 10, height: 10, borderRadius: 5 },
+  pin: { width: Spacing.two + Spacing.half, height: Spacing.two + Spacing.half, borderRadius: Spacing.two + Spacing.half },
   routeLine: {
     height: 14,
     width: 2,
     backgroundColor: 'rgba(0,0,0,0.12)',
-    marginLeft: 4,
+    marginLeft: Spacing.one,
   },
   location: { fontSize: 15, fontWeight: 600, flex: 1 },
   metaRow: {

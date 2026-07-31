@@ -193,7 +193,7 @@ function confirmLogout(onConfirm: () => void) {
 const styles = StyleSheet.create({
   header: { alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.four },
   avatarRing: {
-    padding: 5,
+    padding: Spacing.half,
     borderRadius: 999,
     borderWidth: 1,
     marginBottom: Spacing.one,
@@ -217,13 +217,13 @@ const styles = StyleSheet.create({
   segment: {
     flexDirection: 'row',
     borderRadius: 14,
-    padding: 4,
-    gap: 4,
+    padding: Spacing.half,
+    gap: Spacing.half,
   },
   segmentBtn: {
     flex: 1,
     flexDirection: 'row',
-    paddingVertical: 10,
+    paddingVertical: Spacing.two,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.two,
-    paddingVertical: 14,
+    paddingVertical: Spacing.three,
     borderRadius: 14,
     borderWidth: 1.5,
   },
