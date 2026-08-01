@@ -1,4 +1,4 @@
-import { useWindowDimensions } from 'react-native';
+import { PixelRatio, useWindowDimensions } from 'react-native';
 
 const PORTRAIT_GUIDE = { width: 375, height: 812 };
 const LANDSCAPE_GUIDE = { width: 812, height: 375 };
@@ -13,13 +13,14 @@ export function useResponsive() {
   const scaleFactor = width / guide.width;
   const verticalScaleFactor = height / guide.height;
 
-  const scale = (size: number) => Math.round(size * scaleFactor);
-  const verticalScale = (size: number) => Math.round(size * verticalScaleFactor);
+  // PixelRatio ensures crisp rendering across all screen densities
+  const scale = (size: number) => PixelRatio.roundToNearestPixel(size * scaleFactor);
+  const verticalScale = (size: number) => PixelRatio.roundToNearestPixel(size * verticalScaleFactor);
   const moderateScale = (size: number, factor = 0.5) =>
-    Math.round(size + (scale(size) - size) * factor);
+    PixelRatio.roundToNearestPixel(size + (scale(size) - size) * factor);
 
-  const wp = (percentage: number) => Math.round((width * percentage) / 100);
-  const hp = (percentage: number) => Math.round((height * percentage) / 100);
+  const wp = (percentage: number) => PixelRatio.roundToNearestPixel((width * percentage) / 100);
+  const hp = (percentage: number) => PixelRatio.roundToNearestPixel((height * percentage) / 100);
 
   return {
     isLandscape,

@@ -7,7 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  View
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
@@ -15,8 +15,8 @@ import MapViewDirections from 'react-native-maps-directions';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { BottomTabInset, Spacing } from '@/constants/theme';
-import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { type Booking, type DriverStatus } from '@/lib/api';
 
 export interface ActiveRideScreenProps {
@@ -35,7 +35,7 @@ export function ActiveRideScreen({
   onRideComplete,
 }: ActiveRideScreenProps) {
   const theme = useTheme();
-  const { isLandscape, screenHeight, scale, verticalScale, wp, hp } = useResponsive();
+  const { isLandscape, screenHeight, scale, verticalScale, moderateScale, wp, hp } = useResponsive();
   
   // 1. Local status state for Instant / Smooth UI transition
   const [currentStatus, setCurrentStatus] = useState<DriverStatus>(booking.driver_status);
@@ -267,12 +267,19 @@ export function ActiveRideScreen({
 
   const renderPickupCard = () => (
     <>
-      <View style={styles.compactTop}>
-        <View style={[styles.compactIcon, { backgroundColor: theme.brandSoft }]}>
-          <Ionicons name="location" size={20} color={theme.brand} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+        <View style={{
+          width: scale(36),
+          height: scale(36),
+          borderRadius: moderateScale(10),
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.brandSoft,
+        }}>
+          <Ionicons name="location" size={scale(20)} color={theme.brand} />
         </View>
-        <View style={styles.compactRoute}>
-          <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
+        <View style={{ flex: 1, gap: verticalScale(1), minWidth: 0 }}>
+          <Text style={{ fontSize: moderateScale(13), fontWeight: '700', flexShrink: 1, color: theme.text }} numberOfLines={1}>
             {pickupLocation.address}
           </Text>
         </View>
@@ -280,10 +287,17 @@ export function ActiveRideScreen({
       </View>
 
       {routeInfo && (
-        <View style={[styles.compactMeta, { borderTopColor: theme.border }]}>
-          <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>ETA</Text>
-            <Text style={[styles.metaValue, { color: theme.text }]}>
+        <View style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: scale(Spacing.two),
+          paddingTop: verticalScale(Spacing.two),
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: theme.border,
+        }}>
+          <View style={{ flex: 1, gap: verticalScale(1), minWidth: 0 }}>
+            <Text style={{ fontSize: moderateScale(10), fontWeight: '600', opacity: 0.85, color: theme.textSecondary }}>ETA</Text>
+            <Text style={{ fontSize: moderateScale(12), fontWeight: '600', color: theme.text }}>
               {formatDuration(routeInfo.duration)} · {routeInfo.distance.toFixed(1)} km
             </Text>
           </View>
@@ -295,39 +309,53 @@ export function ActiveRideScreen({
         loading={isArriving}
         disabled={isArriving}
         onPress={() => confirmAndTransition('arrived')}
-        style={styles.primaryButton}
+        style={{ marginTop: verticalScale(Spacing.two) }}
       />
     </>
   );
 
   const renderArrivedCard = () => (
     <>
-      <View style={styles.compactTop}>
-        <View style={[styles.compactIcon, { backgroundColor: theme.warningSoft }]}>
-          <Ionicons name="checkmark-circle" size={20} color={theme.warning} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+        <View style={{
+          width: scale(36),
+          height: scale(36),
+          borderRadius: moderateScale(10),
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.warningSoft,
+        }}>
+          <Ionicons name="checkmark-circle" size={scale(20)} color={theme.warning} />
         </View>
-        <View style={styles.compactRoute}>
-          <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
+        <View style={{ flex: 1, gap: verticalScale(1), minWidth: 0 }}>
+          <Text style={{ fontSize: moderateScale(13), fontWeight: '700', flexShrink: 1, color: theme.text }} numberOfLines={1}>
             {pickupLocation.address}
           </Text>
-          <Text style={[styles.compactArrow, { color: theme.textSecondary }]}>You have arrived</Text>
+          <Text style={{ fontSize: moderateScale(12), fontWeight: '700', marginVertical: verticalScale(1), color: theme.textSecondary }}>You have arrived</Text>
         </View>
         <StatusBadge status="arrived" />
       </View>
 
-      <View style={[styles.compactMeta, { borderTopColor: theme.border }]}>
-        <View style={styles.metaItem}>
-          <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>Customer</Text>
-          <Text style={[styles.metaValue, { color: theme.text }]} numberOfLines={1}>
+      <View style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: scale(Spacing.two),
+        paddingTop: verticalScale(Spacing.two),
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: theme.border,
+      }}>
+        <View style={{ flex: 1, gap: verticalScale(1), minWidth: 0 }}>
+          <Text style={{ fontSize: moderateScale(10), fontWeight: '600', opacity: 0.85, color: theme.textSecondary }}>Customer</Text>
+          <Text style={{ fontSize: moderateScale(12), fontWeight: '600', color: theme.text }} numberOfLines={1}>
             {customerName}
           </Text>
           {customerPhone ? (
-            <Text style={[styles.metaContact, { color: theme.brand }]} numberOfLines={1}>
+            <Text style={{ fontSize: moderateScale(11), fontWeight: '500', color: theme.brand }} numberOfLines={1}>
               {customerPhone}
             </Text>
           ) : null}
           {customerEmail ? (
-            <Text style={[styles.metaContact, { color: theme.textSecondary }]} numberOfLines={1}>
+            <Text style={{ fontSize: moderateScale(11), fontWeight: '500', color: theme.textSecondary }} numberOfLines={1}>
               {customerEmail}
             </Text>
           ) : null}
@@ -339,19 +367,26 @@ export function ActiveRideScreen({
         loading={isStarting}
         disabled={isStarting}
         onPress={() => confirmAndTransition('in_progress')}
-        style={styles.primaryButton}
+        style={{ marginTop: verticalScale(Spacing.two) }}
       />
     </>
   );
 
   const renderDestinationCard = () => (
     <>
-      <View style={styles.compactTop}>
-        <View style={[styles.compactIcon, { backgroundColor: theme.brandSoft }]}>
-          <Ionicons name="flag" size={20} color={theme.brand} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+        <View style={{
+          width: scale(36),
+          height: scale(36),
+          borderRadius: moderateScale(10),
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.brandSoft,
+        }}>
+          <Ionicons name="flag" size={scale(20)} color={theme.brand} />
         </View>
-        <View style={styles.compactRoute}>
-          <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
+        <View style={{ flex: 1, gap: verticalScale(1), minWidth: 0 }}>
+          <Text style={{ fontSize: moderateScale(13), fontWeight: '700', flexShrink: 1, color: theme.text }} numberOfLines={1}>
             {dropoffLocation.address}
           </Text>
         </View>
@@ -359,10 +394,17 @@ export function ActiveRideScreen({
       </View>
 
       {routeInfo && (
-        <View style={[styles.compactMeta, { borderTopColor: theme.border }]}>
-          <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>ETA</Text>
-            <Text style={[styles.metaValue, { color: theme.text }]}>
+        <View style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: scale(Spacing.two),
+          paddingTop: verticalScale(Spacing.two),
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: theme.border,
+        }}>
+          <View style={{ flex: 1, gap: verticalScale(1), minWidth: 0 }}>
+            <Text style={{ fontSize: moderateScale(10), fontWeight: '600', opacity: 0.85, color: theme.textSecondary }}>ETA</Text>
+            <Text style={{ fontSize: moderateScale(12), fontWeight: '600', color: theme.text }}>
               {formatDuration(routeInfo.duration)} · {routeInfo.distance.toFixed(1)} km
             </Text>
           </View>
@@ -374,31 +416,38 @@ export function ActiveRideScreen({
         loading={isCompleting}
         disabled={isCompleting}
         onPress={() => confirmAndTransition('completed')}
-        style={styles.primaryButton}
+        style={{ marginTop: verticalScale(Spacing.two) }}
 />
      </>
   );
 
   const renderCompletedCard = () => (
-    <View style={styles.compactTop}>
-      <View style={[styles.compactIcon, { backgroundColor: theme.successSoft }]}>
-        <Ionicons name="checkmark-circle" size={22} color={theme.success} />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+      <View style={{
+        width: scale(36),
+        height: scale(36),
+        borderRadius: moderateScale(10),
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme.successSoft,
+      }}>
+        <Ionicons name="checkmark-circle" size={scale(22)} color={theme.success} />
       </View>
-      <View style={styles.compactRoute}>
-        <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
+      <View style={{ flex: 1, gap: verticalScale(1), minWidth: 0 }}>
+        <Text style={{ fontSize: moderateScale(13), fontWeight: '700', flexShrink: 1, color: theme.text }} numberOfLines={1}>
           {dropoffLocation.address}
         </Text>
-        <Text style={[styles.compactArrow, { color: theme.textSecondary }]}>Ride Completed</Text>
+        <Text style={{ fontSize: moderateScale(12), fontWeight: '700', marginVertical: verticalScale(1), color: theme.textSecondary }}>Ride Completed</Text>
       </View>
       <StatusBadge status="completed" />
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1 }}>
       <MapView
         ref={mapRef}
-        style={styles.map}
+        style={{ flex: 1 }}
         provider={PROVIDER_GOOGLE}
         initialRegion={initialMapRegion}
         showsUserLocation={false}
@@ -411,8 +460,15 @@ export function ActiveRideScreen({
           description="Current position"
           identifier="driver"
         >
-          <View style={styles.driverMarkerContainer}>
-            <View style={[styles.driverMarkerDot, { backgroundColor: theme.brand }]} />
+          <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{
+              width: scale(20),
+              height: scale(20),
+              borderRadius: moderateScale(10),
+              borderWidth: scale(3),
+              borderColor: '#ffffff',
+              backgroundColor: theme.brand,
+            }} />
           </View>
         </Marker>
 
@@ -423,8 +479,8 @@ export function ActiveRideScreen({
             description={pickupLocation.address}
             identifier="pickup"
           >
-            <View style={styles.endpointMarker}>
-              <Ionicons name="location" size={28} color={theme.danger} />
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="location" size={scale(28)} color={theme.danger} />
             </View>
           </Marker>
         )}
@@ -436,8 +492,8 @@ export function ActiveRideScreen({
             description={dropoffLocation.address}
             identifier="dropoff"
           >
-            <View style={styles.endpointMarker}>
-              <Ionicons name="flag" size={28} color={theme.brand} />
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="flag" size={scale(28)} color={theme.brand} />
             </View>
           </Marker>
         )}
@@ -465,14 +521,42 @@ export function ActiveRideScreen({
       </MapView>
 
       {locationError && (
-        <View style={[styles.errorBanner, { backgroundColor: theme.dangerSoft }]}>
-          <Text style={[styles.errorBannerText, { color: theme.danger }]}>{locationError}</Text>
+        <View style={{
+          position: 'absolute',
+          top: scale(16),
+          left: scale(16),
+          right: scale(16),
+          paddingVertical: verticalScale(12),
+          paddingHorizontal: scale(16),
+          borderRadius: moderateScale(12),
+          borderWidth: scale(1),
+          borderColor: 'rgba(239, 68, 68, 0.2)',
+          backgroundColor: theme.dangerSoft,
+        }}>
+          <Text style={{ fontSize: moderateScale(13), fontWeight: '600', textAlign: 'center', color: theme.danger }}>{locationError}</Text>
         </View>
       )}
 
-      <View style={[styles.bottomCard, { backgroundColor: theme.surface, maxHeight: isLandscape ? hp(45) : hp(60) }]} pointerEvents="box-none">
+      <View style={{
+        position: 'absolute',
+        bottom: verticalScale(BottomTabInset + Spacing.three),
+        left: 0,
+        right: 0,
+        marginHorizontal: scale(10),
+        borderRadius: moderateScale(15),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: scale(6) },
+        shadowOpacity: 0.15,
+        shadowRadius: scale(10),
+        elevation: 6,
+        paddingHorizontal: scale(Spacing.three),
+        paddingTop: verticalScale(Spacing.two),
+        paddingBottom: verticalScale(Spacing.four),
+        backgroundColor: theme.surface,
+        maxHeight: isLandscape ? hp(45) : hp(60),
+      }} pointerEvents="box-none">
         {isLandscape ? (
-          <ScrollView contentContainerStyle={styles.bottomCardScroll} showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={{ gap: verticalScale(Spacing.two) }} showsVerticalScrollIndicator={false}>
             {currentStatus === 'heading_to_pickup' && renderPickupCard()}
             {currentStatus === 'arrived' && renderArrivedCard()}
             {currentStatus === 'in_progress' && renderDestinationCard()}
@@ -490,91 +574,3 @@ export function ActiveRideScreen({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  map: {
-    flex: 1,
-  },
-  driverMarkerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  driverMarkerDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 3,
-    borderColor: '#ffffff',
-  },
-  endpointMarker: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorBanner: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    right: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
-  },
-  errorBannerText: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  bottomCard: {
-    position: 'absolute',
-    bottom: BottomTabInset + Spacing.three,
-    left: 0,
-    right: 0,
-    marginHorizontal: 10,
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 6,
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.four,
-  },
-  bottomCardScroll: {
-    gap: Spacing.two,
-  },
-  compactTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  compactIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  compactRoute: { flex: 1, gap: 1, minWidth: 0 },
-  compactPoint: { fontSize: 13, fontWeight: '700', flexShrink: 1 },
-  compactArrow: { fontSize: 12, fontWeight: '700', marginVertical: 1 },
-  compactMeta: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-    paddingTop: Spacing.two,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  metaItem: { flex: 1, gap: 1, minWidth: 0 },
-  metaLabel: { fontSize: 10, fontWeight: '600', opacity: 0.85 },
-  metaValue: { fontSize: 12, fontWeight: '600' },
-  metaContact: { fontSize: 11, fontWeight: '500' },
-  primaryButton: {
-    marginTop: Spacing.two,
-  },
-});

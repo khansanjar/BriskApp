@@ -28,7 +28,7 @@ export function TextField({
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          borderWidth: 1,
+          borderWidth: scale(1),
           borderRadius: moderateScale(16),
           paddingHorizontal: scale(Spacing.three),
           minHeight: isLandscape ? verticalScale(Spacing.five + 4) : verticalScale(Spacing.six + 4),

@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RideMap } from '@/components/RideMap';
 import { Avatar } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { DriverStatusMeta, Spacing } from '@/constants/theme';
+import { BottomTabInset, DriverStatusMeta, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { getDashboard, type Booking, type DashboardData, type User } from '@/lib/api';
@@ -212,7 +212,7 @@ export default function DashboardScreen() {
         position: 'absolute',
         left: 0,
         right: 0,
-        bottom: isLandscape ? verticalScale(20) : verticalScale(100),
+        bottom: isLandscape ? verticalScale(20) : verticalScale(BottomTabInset + Spacing.four),
         marginHorizontal: isLandscape ? scale(Spacing.two) : scale(Spacing.four),
         gap: verticalScale(Spacing.three),
         zIndex: 10,
@@ -226,9 +226,9 @@ export default function DashboardScreen() {
               paddingHorizontal: scale(Spacing.three),
               paddingVertical: verticalScale(Spacing.two),
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: 6 },
+              shadowOffset: { width: 0, height: scale(6) },
               shadowOpacity: 0.15,
-              shadowRadius: 10,
+              shadowRadius: scale(10),
               elevation: 6,
               backgroundColor: theme.surface,
             }}>
@@ -265,9 +265,9 @@ export default function DashboardScreen() {
           paddingHorizontal: scale(Spacing.four),
           borderRadius: moderateScale(20),
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 6 },
+          shadowOffset: { width: 0, height: scale(6) },
           shadowOpacity: 0.15,
-          shadowRadius: 10,
+          shadowRadius: scale(10),
           elevation: 6,
           backgroundColor: theme.brand,
         }}>
@@ -277,7 +277,7 @@ export default function DashboardScreen() {
               {data ? formatCurrency(dayEarnings?.amount ?? 0) : '—'}
             </Text>
           </View>
-          <View style={{ width: scale(1), opacity: 0.3, marginHorizontal: scale(Spacing.three), backgroundColor: theme.brandText }} />
+          <View style={{ width: scale(1), opacity: 0.3, marginHorizontal: scale(Spacing.three), backgroundColor: theme.brandText, borderWidth: scale(0) }} />
           <View style={{ flex: 1, gap: verticalScale(2) }}>
             <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Rides today</Text>
             <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }}>
@@ -292,9 +292,9 @@ export default function DashboardScreen() {
           paddingHorizontal: scale(Spacing.four),
           paddingVertical: verticalScale(Spacing.two),
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 6 },
+          shadowOffset: { width: 0, height: scale(6) },
           shadowOpacity: 0.15,
-          shadowRadius: 10,
+          shadowRadius: scale(10),
           elevation: 6,
           minHeight: verticalScale(100),
           backgroundColor: theme.surface,

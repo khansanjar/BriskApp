@@ -48,7 +48,7 @@ export function EmptyState({
           width: '30%',
           aspectRatio: 1,
           borderRadius: moderateScale(36),
-          borderWidth: 1,
+          borderWidth: scale(1),
           alignItems: 'center',
           justifyContent: 'center',
           marginBottom: verticalScale(Spacing.one),

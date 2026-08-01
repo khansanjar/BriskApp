@@ -27,7 +27,7 @@ export function Avatar({ firstName, lastName, photo, size = 48, fallback = 'init
     return (
       <Image
         source={{ uri: photo }}
-        style={{ borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', width: displaySize, height: displaySize, borderRadius: radius }}
+        style={{ borderWidth: scale(1), borderColor: 'rgba(0,0,0,0.06)', width: displaySize, height: displaySize, borderRadius: radius }}
       />
     );
   }

@@ -94,11 +94,11 @@ export default function ProfileScreen() {
             fallback="icon"
           />
         </View>
-        <View style={{ flex: 1, alignItems: isLandscape ? 'flex-start' : 'center' }}>
-          <Text style={{ fontSize: moderateScale(22), fontWeight: '800', color: theme.text }}>
+        <View style={{ flex: 1, alignItems: isLandscape ? 'flex-start' : 'center', minWidth: 0 }}>
+          <Text style={{ fontSize: moderateScale(22), fontWeight: '800', color: theme.text, flexShrink: 1 }} numberOfLines={2}>
             {user?.user_fname} {user?.user_lname}
           </Text>
-          <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary }}>{user?.user_email}</Text>
+          <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary, flexShrink: 1 }} numberOfLines={1}>{user?.user_email}</Text>
         </View>
       </View>
 
@@ -128,8 +128,8 @@ export default function ProfileScreen() {
               alignItems: isLandscape ? 'center' : undefined,
               paddingVertical: verticalScale(Spacing.two),
             }}>
-              <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary }}>Phone</Text>
-              <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>{user?.userphone}</Text>
+              <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary, flexShrink: 1 }}>Phone</Text>
+              <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text, flexShrink: 1 }} numberOfLines={1}>{user?.userphone}</Text>
             </View>
             <Pressable onPress={() => setEditing(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: scale(6), marginTop: verticalScale(Spacing.two) }}>
               <Ionicons name="create-outline" size={scale(16)} color={theme.brand} />
@@ -147,8 +147,8 @@ export default function ProfileScreen() {
           alignItems: isLandscape ? 'center' : undefined,
           paddingVertical: verticalScale(Spacing.two),
         }}>
-          <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary }}>Version</Text>
-          <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>
+          <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary, flexShrink: 1 }}>Version</Text>
+          <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text, flexShrink: 1 }} numberOfLines={1}>
             {Constants.expoConfig?.version ?? '1.0.0'}
           </Text>
         </View>
@@ -158,8 +158,8 @@ export default function ProfileScreen() {
           alignItems: isLandscape ? 'center' : undefined,
           paddingVertical: verticalScale(Spacing.two),
         }}>
-          <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary }}>Update ID</Text>
-          <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>
+          <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary, flexShrink: 1 }}>Update ID</Text>
+          <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text, flexShrink: 1 }} numberOfLines={1}>
             {formatUpdateId(Updates.updateId, 5, 10)}
           </Text>
         </View>
@@ -219,7 +219,7 @@ export default function ProfileScreen() {
             gap: scale(Spacing.two),
             paddingVertical: verticalScale(Spacing.three),
             borderRadius: moderateScale(14),
-            borderWidth: 1.5,
+            borderWidth: scale(1.5),
             borderColor: theme.danger,
           },
           pressed && { backgroundColor: theme.dangerSoft },
