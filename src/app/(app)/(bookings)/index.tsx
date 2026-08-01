@@ -6,6 +6,7 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -14,6 +15,7 @@ import {
 import { BookingCard } from '@/components/booking-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
 import { getBookings, type Booking, type BookingsType } from '@/lib/api';
 
@@ -32,6 +34,7 @@ function ListSeparator() {
 
 export default function BookingsListScreen() {
   const theme = useTheme();
+  const { isLandscape } = useResponsive();
   const [tab, setTab] = useState<BookingsType>('upcoming');
   const [items, setItems] = useState<Booking[]>([]);
   const [page, setPage] = useState(1);
@@ -123,9 +126,49 @@ export default function BookingsListScreen() {
 
   const displayItems = items;
 
+  const content = (
+    <FlatList
+      style={{ flex: 1 }}
+      contentContainerStyle={styles.list}
+      data={displayItems}
+      keyExtractor={(item) => String(item.booking_id)}
+      renderItem={renderItem}
+      ItemSeparatorComponent={ListSeparator}
+      initialNumToRender={6}
+      maxToRenderPerBatch={5}
+      windowSize={5}
+      removeClippedSubviews={true}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.brand} />
+      }
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.4}
+      ListHeaderComponent={
+        initialLoading ? <ActivityIndicator color={theme.brand} style={{ padding: Spacing.four }} /> : null
+      }
+      ListEmptyComponent={
+        initialLoading ? null : error ? (
+          <EmptyState
+            icon="alert-circle-outline"
+            tone="danger"
+            title="Something went wrong"
+            description={error}
+          />
+        ) : (
+          <EmptyState
+            icon="documents-outline"
+            title="No bookings here"
+            description="Nothing in this category yet."
+          />
+        )
+      }
+      ListFooterComponent={loadingMore ? <ActivityIndicator color={theme.brand} style={{ padding: Spacing.three }} /> : null}
+    />
+  );
+
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
-      <View style={styles.tabRow}>
+      <View style={[styles.tabRow, isLandscape && styles.tabRowLandscape]}>
         {TABS.map((t) => {
           const active = t.key === tab;
           return (
@@ -152,43 +195,13 @@ export default function BookingsListScreen() {
         })}
       </View>
 
-      <FlatList
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.list}
-        data={displayItems}
-        keyExtractor={(item) => String(item.booking_id)}
-        renderItem={renderItem}
-        ItemSeparatorComponent={ListSeparator}
-        initialNumToRender={6}
-        maxToRenderPerBatch={5}
-        windowSize={5}
-        removeClippedSubviews={true}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.brand} />
-        }
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.4}
-        ListHeaderComponent={
-          initialLoading ? <ActivityIndicator color={theme.brand} style={{ padding: Spacing.four }} /> : null
-        }
-        ListEmptyComponent={
-          initialLoading ? null : error ? (
-            <EmptyState
-              icon="alert-circle-outline"
-              tone="danger"
-              title="Something went wrong"
-              description={error}
-            />
-          ) : (
-            <EmptyState
-              icon="documents-outline"
-              title="No bookings here"
-              description="Nothing in this category yet."
-            />
-          )
-        }
-        ListFooterComponent={loadingMore ? <ActivityIndicator color={theme.brand} style={{ padding: Spacing.three }} /> : null}
-      />
+      {isLandscape ? (
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.list}>
+          {content}
+        </ScrollView>
+      ) : (
+        content
+      )}
     </View>
   );
 }
@@ -201,6 +214,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
     paddingBottom: Spacing.three,
+  },
+  tabRowLandscape: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.two,
   },
   tab: {
     flex: 1,

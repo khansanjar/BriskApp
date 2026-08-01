@@ -2,6 +2,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
 
 type Variant = 'primary' | 'secondary' | 'destructive';
@@ -17,6 +18,7 @@ interface Props {
 
 export function Button({ title, onPress, variant = 'primary', loading, disabled, style }: Props) {
   const theme = useTheme();
+  const { isLandscape } = useResponsive();
 
   const bg = variant === 'primary' ? theme.brand : variant === 'destructive' ? theme.danger : theme.surface;
   const borderColor = variant === 'secondary' ? theme.border : bg;
@@ -42,6 +44,7 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
         },
         disabled || loading ? styles.disabled : null,
         pressed && !disabled && !loading ? styles.pressed : null,
+        isLandscape && styles.baseLandscape,
         style,
       ]}>
       <View style={styles.contentRow}>
@@ -60,6 +63,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  baseLandscape: {
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
   },
   contentRow: {
     flexDirection: 'row',

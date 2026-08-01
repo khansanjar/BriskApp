@@ -3,7 +3,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useAuth } from '@/context/auth';
 import { useTheme } from '@/hooks/use-theme';
 import { updateProfile, type User } from '@/lib/api';
@@ -37,6 +38,7 @@ function formatUpdateId(id?: string | null, startLen = 5, endLen = 5): string {
 
 export default function ProfileScreen() {
   const theme = useTheme();
+  const { isLandscape, scale, verticalScale, wp, hp } = useResponsive();
   const { mode, setMode } = useThemeMode();
   const { user, signOut, updateLocalUser } = useAuth();
 
@@ -71,20 +73,22 @@ export default function ProfileScreen() {
 
   return (
     <Screen>
-      <View style={styles.header}>
+      <View style={[styles.header, isLandscape && styles.headerLandscape]}>
         <View style={[styles.avatarRing, { backgroundColor: theme.brandSoft, borderColor: theme.border }]}>
           <Avatar
             firstName={user?.user_fname}
             lastName={user?.user_lname}
             photo={user?.profile_photo ?? null}
-            size={84}
+            size={isLandscape ? 56 : 84}
             fallback="icon"
           />
         </View>
-        <Text style={[styles.name, { color: theme.text }]}>
-          {user?.user_fname} {user?.user_lname}
-        </Text>
-        <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.user_email}</Text>
+        <View style={styles.headerText}>
+          <Text style={[styles.name, { color: theme.text }]}>
+            {user?.user_fname} {user?.user_lname}
+          </Text>
+          <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.user_email}</Text>
+        </View>
       </View>
 
       <Card style={styles.card}>
@@ -107,7 +111,7 @@ export default function ProfileScreen() {
           </>
         ) : (
           <>
-            <View style={styles.infoRow}>
+            <View style={[styles.infoRow, isLandscape && styles.infoRowLandscape]}>
               <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Phone</Text>
               <Text style={[styles.infoValue, { color: theme.text }]}>{user?.userphone}</Text>
             </View>
@@ -121,16 +125,15 @@ export default function ProfileScreen() {
 
       <Card style={styles.card}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>App Info</Text>
-        <View style={styles.infoRow}>
+        <View style={[styles.infoRow, isLandscape && styles.infoRowLandscape]}>
           <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Version</Text>
           <Text style={[styles.infoValue, { color: theme.text }]}>
             {Constants.expoConfig?.version ?? '1.0.0'}
           </Text>
         </View>
-        <View style={styles.infoRow}>
+        <View style={[styles.infoRow, isLandscape && styles.infoRowLandscape]}>
           <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Update ID</Text>
           <Text style={[styles.infoValue, { color: theme.text }]}>
-            {/* Pehle 5 aur Aakhri 5 characters dikhayega, center mein ***** */}
             {formatUpdateId(Updates.updateId, 5, 10)}
           </Text>
         </View>
@@ -177,6 +180,22 @@ export default function ProfileScreen() {
       </Pressable>
     </Screen>
   );
+          })}
+        </View>
+      </Card>
+
+      <Pressable
+        onPress={() => confirmLogout(signOut)}
+        style={({ pressed }) => [
+          styles.logout,
+          { borderColor: theme.danger },
+          pressed && { backgroundColor: theme.dangerSoft },
+        ]}>
+        <Ionicons name="log-out-outline" size={20} color={theme.danger} />
+        <Text style={[styles.logoutText, { color: theme.danger }]}>Log out</Text>
+      </Pressable>
+    </Screen>
+  );
 }
 
 function confirmLogout(onConfirm: () => void) {
@@ -192,6 +211,13 @@ function confirmLogout(onConfirm: () => void) {
 
 const styles = StyleSheet.create({
   header: { alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.four },
+  headerLandscape: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    marginBottom: Spacing.three,
+  },
+  headerText: { flex: 1, alignItems: isLandscape ? 'flex-start' : 'center' },
   avatarRing: {
     padding: Spacing.half,
     borderRadius: 999,
@@ -208,6 +234,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: Spacing.two,
+  },
+  infoRowLandscape: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   infoLabel: { fontSize: 14 },
   infoValue: { fontSize: 14, fontWeight: 600 },

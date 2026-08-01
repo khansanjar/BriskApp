@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -14,6 +15,7 @@ import MapViewDirections from 'react-native-maps-directions';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
 import { type Booking, type DriverStatus } from '@/lib/api';
 
@@ -33,6 +35,7 @@ export function ActiveRideScreen({
   onRideComplete,
 }: ActiveRideScreenProps) {
   const theme = useTheme();
+  const { isLandscape, screenHeight, scale, verticalScale, wp, hp } = useResponsive();
   
   // 1. Local status state for Instant / Smooth UI transition
   const [currentStatus, setCurrentStatus] = useState<DriverStatus>(booking.driver_status);
@@ -467,11 +470,22 @@ export function ActiveRideScreen({
         </View>
       )}
 
-      <View style={[styles.bottomCard, { backgroundColor: theme.surface }]} pointerEvents="box-none">
-        {currentStatus === 'heading_to_pickup' && renderPickupCard()}
-        {currentStatus === 'arrived' && renderArrivedCard()}
-        {currentStatus === 'in_progress' && renderDestinationCard()}
-        {currentStatus === 'completed' && renderCompletedCard()}
+      <View style={[styles.bottomCard, { backgroundColor: theme.surface, maxHeight: isLandscape ? hp(45) : hp(60) }]} pointerEvents="box-none">
+        {isLandscape ? (
+          <ScrollView contentContainerStyle={styles.bottomCardScroll} showsVerticalScrollIndicator={false}>
+            {currentStatus === 'heading_to_pickup' && renderPickupCard()}
+            {currentStatus === 'arrived' && renderArrivedCard()}
+            {currentStatus === 'in_progress' && renderDestinationCard()}
+            {currentStatus === 'completed' && renderCompletedCard()}
+          </ScrollView>
+        ) : (
+          <>
+            {currentStatus === 'heading_to_pickup' && renderPickupCard()}
+            {currentStatus === 'arrived' && renderArrivedCard()}
+            {currentStatus === 'in_progress' && renderDestinationCard()}
+            {currentStatus === 'completed' && renderCompletedCard()}
+          </>
+        )}
       </View>
     </View>
   );
@@ -524,13 +538,15 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    
     shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 6,
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
     paddingBottom: Spacing.four,
+  },
+  bottomCardScroll: {
+    gap: Spacing.two,
   },
   compactTop: {
     flexDirection: 'row',
@@ -544,8 +560,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  compactRoute: { flex: 1, gap: 1 },
-  compactPoint: { fontSize: 13, fontWeight: '700' },
+  compactRoute: { flex: 1, gap: 1, minWidth: 0 },
+  compactPoint: { fontSize: 13, fontWeight: '700', flexShrink: 1 },
   compactArrow: { fontSize: 12, fontWeight: '700', marginVertical: 1 },
   compactMeta: {
     flexDirection: 'row',
@@ -554,7 +570,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  metaItem: { flex: 1, gap: 1 },
+  metaItem: { flex: 1, gap: 1, minWidth: 0 },
   metaLabel: { fontSize: 10, fontWeight: '600', opacity: 0.85 },
   metaValue: { fontSize: 12, fontWeight: '600' },
   metaContact: { fontSize: 11, fontWeight: '500' },

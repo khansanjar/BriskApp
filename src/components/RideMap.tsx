@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import { Colors, Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useBookingCoordinates } from '@/hooks/use-booking-coordinates';
 import type { Booking } from '@/lib/api';
 import { useThemeMode } from '@/theme/theme-context';
@@ -53,6 +54,7 @@ function decodePolyline(encoded: string) {
 
 export function RideMap({ booking }: { booking?: Booking | null }) {
   const { resolvedScheme } = useThemeMode();
+  const { isLandscape, screenWidth, scale, verticalScale, wp, hp } = useResponsive();
   const [driver, setDriver] = useState<{ latitude: number; longitude: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [routeUnavailable, setRouteUnavailable] = useState(false);
@@ -68,47 +70,47 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
     let active = true;
 
      (async () => {
-       try {
-         const { status } = await Location.requestForegroundPermissionsAsync();
-         if (status !== 'granted') {
-           if (active) setError('Location permission denied.');
-           return;
-         }
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          if (active) setError('Location permission denied.');
+          return;
+        }
 
-         try {
-           const initial = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-           if (active) {
-             setDriver({ latitude: initial.coords.latitude, longitude: initial.coords.longitude });
-           }
-          } catch (error) {
-            console.warn('[RideMap Location Error]:', error);
-            // Live watch below will populate this shortly; nothing to fall back to here.
+        try {
+          const initial = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+          if (active) {
+            setDriver({ latitude: initial.coords.latitude, longitude: initial.coords.longitude });
           }
+         } catch (error) {
+          console.warn('[RideMap Location Error]:', error);
+          // Live watch below will populate this shortly; nothing to fall back to here.
+        }
 
-         try {
-           watchRef.current = await Location.watchPositionAsync(
-             { accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 10 },
-             (loc) => {
-               if (loc.coords.latitude === 0 && loc.coords.longitude === 0) return;
-               if (active) {
-                 setDriver({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
-                 setError(null);
-               }
-             }
-           );
-         } catch (watchErr) {
-           console.warn('watchPositionAsync failed (location settings unsatisfied):', watchErr);
-           if (active) {
-             setError('Location tracking unavailable. Check your device GPS settings.');
-           }
-         }
-       } catch (permErr) {
-         console.warn('requestForegroundPermissionsAsync failed (location settings unsatisfied):', permErr);
-         if (active) {
-           setError('Location access unavailable. Check your device GPS settings.');
-         }
-       }
-     })();
+        try {
+          watchRef.current = await Location.watchPositionAsync(
+            { accuracy: Location.Accuracy.High, timeInterval: 5000, distanceInterval: 10 },
+            (loc) => {
+              if (loc.coords.latitude === 0 && loc.coords.longitude === 0) return;
+              if (active) {
+                setDriver({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+                setError(null);
+              }
+            }
+          );
+        } catch (watchErr) {
+          console.warn('watchPositionAsync failed (location settings unsatisfied):', watchErr);
+          if (active) {
+            setError('Location tracking unavailable. Check your device GPS settings.');
+          }
+        }
+      } catch (permErr) {
+        console.warn('requestForegroundPermissionsAsync failed (location settings unsatisfied):', permErr);
+        if (active) {
+          setError('Location access unavailable. Check your device GPS settings.');
+        }
+      }
+    })();
 
     return () => {
       active = false;
@@ -204,9 +206,9 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
   }
 
   return (
-    <View style={styles.fullscreen}>
+    <View style={[styles.fullscreen, isLandscape && styles.fullscreenLandscape]}>
       <MapView
-        style={styles.map}
+        style={[styles.map, isLandscape && styles.mapLandscape]}
         provider={PROVIDER_GOOGLE}
         region={region}
         showsUserLocation={false}
@@ -254,7 +256,9 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
 
 const styles = StyleSheet.create({
   fullscreen: { flex: 1, width: '100%', height: '100%' },
+  fullscreenLandscape: { flex: 1, width: '100%', height: '100%' },
   map: { flex: 1, borderRadius: 16, overflow: 'hidden' },
+  mapLandscape: { flex: 1, borderRadius: 12, overflow: 'hidden' },
   loadingOverlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.04)' },
   fallback: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
   fallbackText: { fontSize: 14, textAlign: 'center' },

@@ -6,6 +6,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'rea
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
 import { getNotifications, markNotificationRead, type Notification as AppNotification } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
@@ -26,10 +27,10 @@ const NotificationCard = memo(function NotificationCard({
     <Pressable onPress={() => onPress(item)}>
       <Card style={[styles.card, { opacity: item.is_read ? 0.6 : 1 }]}>
         <View style={styles.row}>
-          <Text style={[styles.title, { color: theme.text }]}>{item.title}</Text>
+          <Text style={[styles.title, { color: theme.text }]} numberOfLines={1} flexShrink={1}>{item.title}</Text>
           {!item.is_read ? <View style={[styles.dot, { backgroundColor: theme.brand }]} /> : null}
         </View>
-        <Text style={[styles.body, { color: theme.textSecondary }]}>{item.body}</Text>
+        <Text style={[styles.body, { color: theme.textSecondary }]} numberOfLines={2}>{item.body}</Text>
         <Text style={[styles.time, { color: theme.textSecondary }]}>
           {formatDateTime(item.created_at)}
         </Text>
@@ -40,6 +41,7 @@ const NotificationCard = memo(function NotificationCard({
 
 export default function NotificationsScreen() {
   const theme = useTheme();
+  const { isLandscape } = useResponsive();
   const [items, setItems] = useState<AppNotification[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);

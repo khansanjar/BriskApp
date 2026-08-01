@@ -1,6 +1,7 @@
-import { View, type ViewProps } from 'react-native';
+import { StyleSheet, View, type ViewProps } from 'react-native';
 
 import { ThemeColor } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedViewProps = ViewProps & {
@@ -11,6 +12,13 @@ export type ThemedViewProps = ViewProps & {
 
 export function ThemedView({ style, lightColor, darkColor, type, ...otherProps }: ThemedViewProps) {
   const theme = useTheme();
+  const { isLandscape } = useResponsive();
 
-  return <View style={[{ backgroundColor: theme[type ?? 'background'] }, style]} {...otherProps} />;
+  return <View style={[{ backgroundColor: theme[type ?? 'background'] }, isLandscape && styles.landscape, style]} {...otherProps} />;
 }
+
+const styles = StyleSheet.create({
+  landscape: {
+    borderRadius: 12,
+  },
+});

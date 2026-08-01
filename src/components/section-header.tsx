@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
 
 export function SectionHeader({
@@ -13,8 +14,9 @@ export function SectionHeader({
   onAction?: () => void;
 }) {
   const theme = useTheme();
+  const { isLandscape } = useResponsive();
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isLandscape && styles.containerLandscape]}>
       <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
       {action ? (
         <Pressable onPress={onAction} hitSlop={8}>
@@ -32,6 +34,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: Spacing.four,
     marginBottom: Spacing.three,
+  },
+  containerLandscape: {
+    marginTop: Spacing.three,
+    marginBottom: Spacing.two,
   },
   title: {
     fontSize: 18,

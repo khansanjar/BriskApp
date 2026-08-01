@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 're
 import { ActiveRideScreen } from '@/components/ActiveRideScreen';
 import { BookingDetail } from '@/components/booking-detail';
 import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useBookingCoordinates } from '@/hooks/use-booking-coordinates';
 import { useBookingDetail } from '@/hooks/use-booking-detail';
 import { useTheme } from '@/hooks/use-theme';
@@ -16,6 +17,7 @@ const FALLBACK_COORDINATES = { latitude: 0, longitude: 0 };
 
 export function BookingDetailScreen({ id }: { id: number }) {
   const theme = useTheme();
+  const { isLandscape, screenHeight, scale, verticalScale, wp, hp } = useResponsive();
   const { booking, loading, updating, cancelling, error, update, cancel, reload } = useBookingDetail(id);
   const { pickup: geocodedPickup, dropoff: geocodedDropoff } = useBookingCoordinates(booking);
 
@@ -94,17 +96,31 @@ export function BookingDetailScreen({ id }: { id: number }) {
     );
   }
 
+  const content = (
+    <BookingDetail
+      booking={booking}
+      onUpdate={handleUpdate}
+      updating={updating}
+      onCancel={handleCancel}
+      cancelling={cancelling}
+    />
+  );
+
+  if (isLandscape) {
+    return (
+      <ScrollView
+        style={[styles.container, { backgroundColor: theme.background }]}
+        contentContainerStyle={styles.content}>
+        {content}
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.background }]}
       contentContainerStyle={styles.content}>
-      <BookingDetail
-        booking={booking}
-        onUpdate={handleUpdate}
-        updating={updating}
-        onCancel={handleCancel}
-        cancelling={cancelling}
-      />
+      {content}
     </ScrollView>
   );
 }

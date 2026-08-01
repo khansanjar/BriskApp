@@ -4,6 +4,7 @@ import { Image } from 'react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { getInitials } from '@/lib/format';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
 
 interface AvatarProps {
@@ -17,7 +18,9 @@ interface AvatarProps {
 
 export function Avatar({ firstName, lastName, photo, size = 48, fallback = 'initials' }: AvatarProps) {
   const theme = useTheme();
-  const radius = size / 2;
+  const { isLandscape } = useResponsive();
+  const displaySize = isLandscape ? Math.max(size, 32) : size;
+  const radius = displaySize / 2;
   const initials = getInitials(firstName ?? '', lastName ?? '');
   const showIcon = fallback === 'icon' || !initials;
 
@@ -25,7 +28,7 @@ export function Avatar({ firstName, lastName, photo, size = 48, fallback = 'init
     return (
       <Image
         source={{ uri: photo }}
-        style={[styles.image, { width: size, height: size, borderRadius: radius }]}
+        style={[styles.image, { width: displaySize, height: displaySize, borderRadius: radius }]}
       />
     );
   }
@@ -35,16 +38,16 @@ export function Avatar({ firstName, lastName, photo, size = 48, fallback = 'init
       style={[
         styles.fallback,
         {
-          width: size,
-          height: size,
+          width: displaySize,
+          height: displaySize,
           borderRadius: radius,
           backgroundColor: theme.brandSoft,
         },
       ]}>
       {showIcon ? (
-        <Ionicons name="person" size={size * 0.5} color={theme.brand} />
+        <Ionicons name="person" size={displaySize * 0.5} color={theme.brand} />
       ) : (
-        <Text style={[styles.initials, { color: theme.brand, fontSize: size * 0.36 }]}>
+        <Text style={[styles.initials, { color: theme.brand, fontSize: displaySize * 0.36 }]}>
           {initials}
         </Text>
       )}

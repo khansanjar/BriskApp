@@ -3,6 +3,7 @@ import { type ComponentProps, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
@@ -27,12 +28,13 @@ export function EmptyState({
   compact = false,
 }: EmptyStateProps) {
   const theme = useTheme();
+  const { isLandscape } = useResponsive();
   const isDanger = tone === 'danger';
   const iconColor = isDanger ? theme.danger : theme.textSecondary;
   const circleBg = isDanger ? theme.dangerSoft : theme.surfaceSecondary;
 
   return (
-    <View style={[styles.container, compact && styles.containerCompact]}>
+    <View style={[styles.container, compact && styles.containerCompact, isLandscape && styles.containerLandscape]}>
       <View
         style={[
           styles.iconWrap,
@@ -61,6 +63,9 @@ const styles = StyleSheet.create({
   },
   containerCompact: {
     paddingVertical: Spacing.four,
+  },
+  containerLandscape: {
+    paddingVertical: Spacing.three,
   },
   iconWrap: {
     maxWidth: 72,

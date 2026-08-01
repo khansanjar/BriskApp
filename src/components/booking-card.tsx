@@ -6,6 +6,7 @@ import { type ComponentProps } from 'react';
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { formatCurrency, formatDate, formatTime } from '@/lib/format';
 import { isRideMissed } from '@/lib/booking-status';
 import { useTheme } from '@/hooks/use-theme';
@@ -23,7 +24,7 @@ function Meta({ icon, text, theme }: MetaProps) {
   return (
     <View style={styles.meta}>
       <Ionicons name={icon} size={14} color={theme.textSecondary} />
-      <Text style={[styles.metaText, { color: theme.textSecondary }]}>{text}</Text>
+      <Text style={[styles.metaText, { color: theme.textSecondary }]} numberOfLines={1} flexShrink={1}>{text}</Text>
     </View>
   );
 }
@@ -38,10 +39,11 @@ export const BookingCard = memo(function BookingCard({
   onPress?: () => void;
 }) {
   const theme = useTheme();
+  const { isLandscape } = useResponsive();
   return (
     <Pressable onPress={onPress} style={({ pressed }) => (pressed ? styles.pressed : null)}>
       <Card>
-        <View style={styles.header}>
+        <View style={[styles.header, isLandscape && styles.headerLandscape]}>
           <View style={styles.routeWrap}>
             <View style={styles.routePoint}>
               <View style={[styles.pin, { backgroundColor: theme.brand }]} />
@@ -60,7 +62,7 @@ export const BookingCard = memo(function BookingCard({
           <StatusBadge status={isRideMissed(booking) ? 'missed' : booking.driver_status} />
         </View>
 
-        <View style={styles.metaRow}>
+        <View style={[styles.metaRow, isLandscape && styles.metaRowLandscape]}>
           <MemoizedMeta icon="calendar-outline" text={formatDate(booking.pickup_date)} theme={theme} />
           <MemoizedMeta icon="time-outline" text={formatTime(booking.pickup_time)} theme={theme} />
           {booking.vehicle_type ? (
@@ -74,7 +76,7 @@ export const BookingCard = memo(function BookingCard({
               {booking.customer?.name ?? 'Customer'}
             </Text>
             {booking.customer?.phone ? (
-              <Text style={[styles.customerPhone, { color: theme.textSecondary }]}>
+              <Text style={[styles.customerPhone, { color: theme.textSecondary }]} numberOfLines={1}>
                 {booking.customer.phone}
               </Text>
             ) : null}
@@ -96,6 +98,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: Spacing.three,
   },
+  headerLandscape: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   routeWrap: { flex: 1, gap: 10 },
   routePoint: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   pin: { width: Spacing.two + Spacing.half, height: Spacing.two + Spacing.half, borderRadius: Spacing.two + Spacing.half },
@@ -112,6 +118,12 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     marginTop: Spacing.three,
   },
+  metaRowLandscape: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.three,
+    marginTop: Spacing.two,
+  },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaText: { fontSize: 13, fontWeight: 500 },
   footer: {
@@ -122,7 +134,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.three,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  customer: { flex: 1 },
+  customer: { flex: 1, minWidth: 0 },
   customerName: { fontSize: 14, fontWeight: 700 },
   customerPhone: { fontSize: 12 },
   fare: { fontSize: 18, fontWeight: 800 },

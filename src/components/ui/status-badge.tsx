@@ -1,16 +1,18 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Colors, DriverStatusMeta, Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
 
 type Tone = 'brand' | 'success' | 'warning' | 'danger' | 'neutral';
 
 export function StatusBadge({ status }: { status: string }) {
   const theme = useTheme();
+  const { isLandscape } = useResponsive();
   const meta = DriverStatusMeta[status] ?? { label: status, tone: 'neutral' as Tone };
   const colors = toneColor(theme, meta.tone);
   return (
-    <View style={[styles.badge, { backgroundColor: colors.bg }]}>
+    <View style={[styles.badge, { backgroundColor: colors.bg }, isLandscape && styles.badgeLandscape]}>
       <View style={[styles.dot, { backgroundColor: colors.fg }]} />
       <Text style={[styles.label, { color: colors.fg }]}>{meta.label}</Text>
     </View>
@@ -44,6 +46,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.half,
     borderRadius: 999,
+  },
+  badgeLandscape: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
   },
   dot: {
     width: 7,

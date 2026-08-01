@@ -1,4 +1,4 @@
-import { Alert, Linking, Pressable, StyleSheet, Text, View, Modal } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View, Modal } from 'react-native';
 import { useState } from 'react';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { type ComponentProps } from 'react';
@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { formatCurrency, formatDate, formatDateTime, formatTime, getInitials } from '@/lib/format';
 import { isRideMissed } from '@/lib/booking-status';
 import { useTheme } from '@/hooks/use-theme';
@@ -57,6 +58,7 @@ export function BookingDetail({
   cancelling: boolean;
 }) {
   const theme = useTheme();
+  const { isLandscape, screenWidth, scale, verticalScale, wp, hp } = useResponsive();
   const next = TRANSITIONS[booking.driver_status] ?? [];
   const missed = isRideMissed(booking);
 
@@ -97,7 +99,7 @@ export function BookingDetail({
   return (
     <View style={styles.container}>
       <Card>
-        <View style={styles.statusRow}>
+        <View style={[styles.statusRow, isLandscape && styles.statusRowLandscape]}>
           <StatusBadge status={missed ? 'missed' : booking.driver_status} />
           <Text style={[styles.fare, { color: theme.text }]}>
             {formatCurrency(booking.total_fare)}
@@ -139,7 +141,7 @@ export function BookingDetail({
       </Card>
 
       <Card>
-        <View style={styles.customerRow}>
+        <View style={[styles.customerRow, isLandscape && styles.customerRowLandscape]}>
           <View style={[styles.customerAvatar, { backgroundColor: theme.brandSoft }]}>
             <Text style={[styles.customerInitials, { color: theme.brand }]}>
               {getInitials(
@@ -148,17 +150,17 @@ export function BookingDetail({
               )}
             </Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.customerName, { color: theme.text }]}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[styles.customerName, { color: theme.text }]} numberOfLines={1}>
               {booking.customer?.name ?? 'Customer'}
             </Text>
             {booking.customer?.phone ? (
-              <Text style={[styles.customerSub, { color: theme.textSecondary }]}>
+              <Text style={[styles.customerSub, { color: theme.textSecondary }]} numberOfLines={1}>
                 {booking.customer.phone}
               </Text>
             ) : null}
             {booking.customer?.email ? (
-              <Text style={[styles.customerSub, { color: theme.textSecondary }]}>
+              <Text style={[styles.customerSub, { color: theme.textSecondary }]} numberOfLines={1}>
                 {booking.customer.email}
               </Text>
             ) : null}
@@ -304,6 +306,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.three,
   },
+  statusRowLandscape: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   fare: { fontSize: 20, fontWeight: 800 },
   timeline: { gap: 2 },
   pointRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
@@ -326,6 +333,11 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: 14, fontWeight: 500 },
   rowValue: { fontSize: 14, fontWeight: 600, flexShrink: 1, textAlign: 'right', marginLeft: Spacing.three },
   customerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  customerRowLandscape: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
   customerAvatar: {
     width: 48,
     height: 48,

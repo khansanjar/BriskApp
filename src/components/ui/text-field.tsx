@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
 
 export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
@@ -19,6 +20,7 @@ export function TextField({
   ...rest
 }: TextFieldProps) {
   const theme = useTheme();
+  const { isLandscape } = useResponsive();
   return (
     <View style={[styles.wrapper, containerStyle]}>
       {label ? <TextLabel>{label}</TextLabel> : null}
@@ -29,6 +31,7 @@ export function TextField({
             backgroundColor: theme.surface,
             borderColor: error ? theme.danger : theme.border,
           },
+          isLandscape && styles.inputContainerLandscape,
         ]}>
         {leftIcon ? (
           <TextLabel style={{ color: theme.textSecondary, marginRight: Spacing.two }}>
@@ -71,6 +74,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: Spacing.three,
     minHeight: Spacing.six + 4,
+  },
+  inputContainerLandscape: {
+    minHeight: Spacing.five + 4,
   },
   input: {
     flex: 1,

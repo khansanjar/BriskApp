@@ -1,12 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
 
 export function BrandHeader({ tagline }: { tagline?: string }) {
   const theme = useTheme();
+  const { isLandscape } = useResponsive();
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isLandscape && styles.containerLandscape]}>
       <View style={[styles.logo, { backgroundColor: theme.brand }]}>
         <Text style={styles.logoText}>B</Text>
       </View>
@@ -20,6 +22,11 @@ export function BrandHeader({ tagline }: { tagline?: string }) {
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  containerLandscape: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
   },

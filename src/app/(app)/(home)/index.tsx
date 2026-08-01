@@ -19,6 +19,7 @@ import { RideMap } from '@/components/RideMap';
 import { Avatar } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { DriverStatusMeta, Spacing } from '@/constants/theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
 import { getDashboard, type Booking, type DashboardData, type User } from '@/lib/api';
 import { isRideMissed } from '@/lib/booking-status';
@@ -66,6 +67,7 @@ const todayKey = localKey(0);
 export default function DashboardScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { isLandscape, screenHeight, scale, verticalScale, wp, hp } = useResponsive();
   const [data, setData] = useState<DashboardData | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -188,7 +190,7 @@ export default function DashboardScreen() {
       </View>
 
       {/* Floating bottom cards */}
-      <View style={styles.bottomCardsContainer}>
+      <View style={[styles.bottomCardsContainer, isLandscape && styles.bottomCardsContainerLandscape]}>
         {activeToday && (
           <Pressable
             onPress={() => openBooking(activeToday.booking_id)}
@@ -261,7 +263,7 @@ export default function DashboardScreen() {
       {/* Modal: all rides for the current day */}
       <Modal visible={showAllRides} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: theme.surface }]}>
+          <View style={[styles.modalCard, { backgroundColor: theme.surface, maxHeight: isLandscape ? hp(70) : '80%' }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.text }]}>Today&apos;s rides</Text>
               <Pressable onPress={() => setShowAllRides(false)} hitSlop={8}>
@@ -409,6 +411,10 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     zIndex: 10,
   },
+  bottomCardsContainerLandscape: {
+    bottom: 20,
+    marginHorizontal: Spacing.two,
+  },
   earningsCard: {
     flexDirection: 'row',
     // justifyContent:"center",
@@ -449,8 +455,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  activeRideCopy: { flex: 1, gap: 1 },
-  activeRideTitle: { fontSize: 13, fontWeight: '700' },
+  activeRideCopy: { flex: 1, gap: 1, minWidth: 0 },
+  activeRideTitle: { fontSize: 13, fontWeight: '700', flexShrink: 1 },
   activeRideStatus: { fontSize: 11, fontWeight: '500' },
 
   upcomingCard: {
@@ -491,8 +497,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  compactRoute: { flex: 1, gap: 2 },
-  compactPoint: { fontSize: 14, fontWeight: '700' },
+  compactRoute: { flex: 1, gap: 2, minWidth: 0 },
+  compactPoint: { fontSize: 14, fontWeight: '700', flexShrink: 1 },
   compactArrow: { fontSize: 12, fontWeight: '700', marginVertical: 2 },
   compactMeta: {
     flexDirection: 'row',
