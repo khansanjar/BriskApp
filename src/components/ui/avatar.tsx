@@ -1,11 +1,10 @@
 // src/components/ui/avatar.tsx
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { Image } from 'react-native';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
-import { getInitials } from '@/lib/format';
-import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
+import { useResponsive } from '@/hooks/useResponsive';
+import { getInitials } from '@/lib/format';
 
 interface AvatarProps {
   firstName?: string;
@@ -18,7 +17,7 @@ interface AvatarProps {
 
 export function Avatar({ firstName, lastName, photo, size = 48, fallback = 'initials' }: AvatarProps) {
   const theme = useTheme();
-  const { isLandscape } = useResponsive();
+  const { isLandscape, scale, moderateScale } = useResponsive();
   const displaySize = isLandscape ? Math.max(size, 32) : size;
   const radius = displaySize / 2;
   const initials = getInitials(firstName ?? '', lastName ?? '');
@@ -28,40 +27,28 @@ export function Avatar({ firstName, lastName, photo, size = 48, fallback = 'init
     return (
       <Image
         source={{ uri: photo }}
-        style={[styles.image, { width: displaySize, height: displaySize, borderRadius: radius }]}
+        style={{ borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', width: displaySize, height: displaySize, borderRadius: radius }}
       />
     );
   }
 
   return (
     <View
-      style={[
-        styles.fallback,
-        {
-          width: displaySize,
-          height: displaySize,
-          borderRadius: radius,
-          backgroundColor: theme.brandSoft,
-        },
-      ]}>
+      style={{
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: displaySize,
+        height: displaySize,
+        borderRadius: radius,
+        backgroundColor: theme.brandSoft,
+      }}>
       {showIcon ? (
-        <Ionicons name="person" size={displaySize * 0.5} color={theme.brand} />
+        <Ionicons name="person" size={scale(displaySize * 0.5)} color={theme.brand} />
       ) : (
-        <Text style={[styles.initials, { color: theme.brand, fontSize: displaySize * 0.36 }]}>
+        <Text style={{ fontWeight: 700, color: theme.brand, fontSize: moderateScale(displaySize * 0.36) }}>
           {initials}
         </Text>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  image: { borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
-  fallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initials: {
-    fontWeight: 700,
-  },
-});

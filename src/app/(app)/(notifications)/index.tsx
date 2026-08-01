@@ -1,13 +1,13 @@
 // src/app/(app)/(notifications)/index.tsx
 import { router } from 'expo-router';
 import { memo, useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { BottomTabInset, Spacing } from '@/constants/theme';
-import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { getNotifications, markNotificationRead, type Notification as AppNotification } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
 
@@ -23,15 +23,16 @@ const NotificationCard = memo(function NotificationCard({
   onPress,
   theme,
 }: NotificationCardProps) {
+  const { scale, verticalScale, moderateScale } = useResponsive();
   return (
     <Pressable onPress={() => onPress(item)}>
-      <Card style={[styles.card, { opacity: item.is_read ? 0.6 : 1 }]}>
-        <View style={styles.row}>
-          <Text style={[styles.title, { color: theme.text }]} numberOfLines={1} flexShrink={1}>{item.title}</Text>
-          {!item.is_read ? <View style={[styles.dot, { backgroundColor: theme.brand }]} /> : null}
+      <Card style={{ marginBottom: verticalScale(Spacing.two), opacity: item.is_read ? 0.6 : 1 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={{ fontSize: moderateScale(16), fontWeight: '700', flexShrink: 1, color: theme.text }} numberOfLines={1}>{item.title}</Text>
+          {!item.is_read ? <View style={{ width: scale(Spacing.half), height: scale(Spacing.half), borderRadius: moderateScale(4), marginLeft: scale(Spacing.two), backgroundColor: theme.brand }} /> : null}
         </View>
-        <Text style={[styles.body, { color: theme.textSecondary }]} numberOfLines={2}>{item.body}</Text>
-        <Text style={[styles.time, { color: theme.textSecondary }]}>
+        <Text style={{ fontSize: moderateScale(14), marginTop: verticalScale(4), lineHeight: verticalScale(20), color: theme.textSecondary }} numberOfLines={2}>{item.body}</Text>
+        <Text style={{ fontSize: moderateScale(12), marginTop: verticalScale(6), color: theme.textSecondary }}>
           {formatDateTime(item.created_at)}
         </Text>
       </Card>
@@ -41,7 +42,7 @@ const NotificationCard = memo(function NotificationCard({
 
 export default function NotificationsScreen() {
   const theme = useTheme();
-  const { isLandscape } = useResponsive();
+  const { isLandscape, scale, verticalScale, moderateScale } = useResponsive();
   const [items, setItems] = useState<AppNotification[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -105,7 +106,7 @@ export default function NotificationsScreen() {
   return (
     <FlatList
       style={{ backgroundColor: theme.background }}
-      contentContainerStyle={[styles.list, items.length === 0 && styles.listEmpty]}
+      contentContainerStyle={{ padding: scale(Spacing.four), paddingBottom: verticalScale(Spacing.six + BottomTabInset + Spacing.three), flexGrow: items.length === 0 ? 1 : undefined, justifyContent: items.length === 0 ? 'center' : undefined }}
       data={items}
       keyExtractor={(item) => String(item.id)}
       renderItem={renderItem}
@@ -135,14 +136,3 @@ export default function NotificationsScreen() {
     />
   );
 }
-
-const styles = StyleSheet.create({
-  list: { padding: Spacing.four, paddingBottom: Spacing.six + BottomTabInset + Spacing.three },
-  listEmpty: { flexGrow: 1, justifyContent: 'center' },
-  card: { marginBottom: Spacing.two },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 16, fontWeight: '700', flexShrink: 1 },
-  body: { fontSize: 14, marginTop: 4, lineHeight: 20 },
-  time: { fontSize: 12, marginTop: 6 },
-  dot: { width: Spacing.half, height: Spacing.half, borderRadius: 4, marginLeft: Spacing.two },
-});

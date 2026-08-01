@@ -2,21 +2,20 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    Text,
+    View,
 } from 'react-native';
 
 import { BookingCard } from '@/components/booking-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { BottomTabInset, Spacing } from '@/constants/theme';
-import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { getBookings, type Booking, type BookingsType } from '@/lib/api';
 
 const TABS: { key: BookingsType; label: string }[] = [
@@ -29,12 +28,13 @@ const PAGE_LIMIT = 10;
 
 // Top-level component declaration: Prevents function re-creation on every render
 function ListSeparator() {
-  return <View style={styles.separator} />;
+  const { verticalScale } = useResponsive();
+  return <View style={{ height: verticalScale(Spacing.three) }} />;
 }
 
 export default function BookingsListScreen() {
   const theme = useTheme();
-  const { isLandscape } = useResponsive();
+  const { isLandscape, scale, verticalScale, moderateScale } = useResponsive();
   const [tab, setTab] = useState<BookingsType>('upcoming');
   const [items, setItems] = useState<Booking[]>([]);
   const [page, setPage] = useState(1);
@@ -129,7 +129,7 @@ export default function BookingsListScreen() {
   const content = (
     <FlatList
       style={{ flex: 1 }}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={{ paddingHorizontal: scale(Spacing.four), paddingBottom: verticalScale(Spacing.six + BottomTabInset + Spacing.three) }}
       data={displayItems}
       keyExtractor={(item) => String(item.booking_id)}
       renderItem={renderItem}
@@ -144,7 +144,7 @@ export default function BookingsListScreen() {
       onEndReached={loadMore}
       onEndReachedThreshold={0.4}
       ListHeaderComponent={
-        initialLoading ? <ActivityIndicator color={theme.brand} style={{ padding: Spacing.four }} /> : null
+        initialLoading ? <ActivityIndicator color={theme.brand} style={{ padding: scale(Spacing.four) }} /> : null
       }
       ListEmptyComponent={
         initialLoading ? null : error ? (
@@ -162,13 +162,22 @@ export default function BookingsListScreen() {
           />
         )
       }
-      ListFooterComponent={loadingMore ? <ActivityIndicator color={theme.brand} style={{ padding: Spacing.three }} /> : null}
+      ListFooterComponent={loadingMore ? (
+        <ActivityIndicator color={theme.brand} style={{ padding: verticalScale(Spacing.three) }} />
+      ) : null}
     />
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.background }]}>
-      <View style={[styles.tabRow, isLandscape && styles.tabRowLandscape]}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: scale(Spacing.two),
+          paddingHorizontal: scale(Spacing.four),
+          paddingTop: isLandscape ? verticalScale(Spacing.two) : verticalScale(Spacing.four),
+          paddingBottom: isLandscape ? verticalScale(Spacing.two) : verticalScale(Spacing.three),
+        }}>
         {TABS.map((t) => {
           const active = t.key === tab;
           return (
@@ -176,17 +185,22 @@ export default function BookingsListScreen() {
               key={t.key}
               onPress={() => setTab(t.key)}
               style={({ pressed }) => [
-                styles.tab,
                 {
+                  flex: 1,
+                  paddingVertical: verticalScale(Spacing.three),
+                  paddingHorizontal: scale(Spacing.three),
+                  borderRadius: moderateScale(14),
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   backgroundColor: active ? theme.brand : theme.surfaceSecondary,
                 },
-                pressed && !active ? styles.tabPressed : null,
+                pressed && !active ? { opacity: 0.7 } : null,
               ]}>
               <Text
                 style={{
                   color: active ? theme.brandText : theme.textSecondary,
                   fontWeight: '700',
-                  fontSize: 14,
+                  fontSize: moderateScale(14),
                 }}>
                 {t.label}
               </Text>
@@ -196,7 +210,7 @@ export default function BookingsListScreen() {
       </View>
 
       {isLandscape ? (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.list}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: scale(Spacing.four), paddingBottom: verticalScale(Spacing.six + BottomTabInset + Spacing.three) }}>
           {content}
         </ScrollView>
       ) : (
@@ -205,32 +219,3 @@ export default function BookingsListScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  tabRow: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-    paddingBottom: Spacing.three,
-  },
-  tabRowLandscape: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.two,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabPressed: { opacity: 0.7 },
-  separator: { height: Spacing.three },
-  list: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six + BottomTabInset + Spacing.three },
-});

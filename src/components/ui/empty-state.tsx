@@ -1,10 +1,10 @@
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { type ComponentProps, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
-import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
+import { useResponsive } from '@/hooks/useResponsive';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -28,67 +28,42 @@ export function EmptyState({
   compact = false,
 }: EmptyStateProps) {
   const theme = useTheme();
-  const { isLandscape } = useResponsive();
+  const { isLandscape, scale, verticalScale, moderateScale } = useResponsive();
   const isDanger = tone === 'danger';
   const iconColor = isDanger ? theme.danger : theme.textSecondary;
   const circleBg = isDanger ? theme.dangerSoft : theme.surfaceSecondary;
 
   return (
-    <View style={[styles.container, compact && styles.containerCompact, isLandscape && styles.containerLandscape]}>
+    <View style={{
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: compact ? verticalScale(Spacing.four) : isLandscape ? verticalScale(Spacing.three) : verticalScale(Spacing.six),
+      paddingHorizontal: scale(Spacing.four),
+      gap: verticalScale(Spacing.two),
+    }}>
       <View
-        style={[
-          styles.iconWrap,
-          { backgroundColor: circleBg, borderColor: theme.border },
-        ]}>
-        <Ionicons name={icon} size={32} color={iconColor} />
+        style={{
+          maxWidth: scale(72),
+          maxHeight: scale(72),
+          width: '30%',
+          aspectRatio: 1,
+          borderRadius: moderateScale(36),
+          borderWidth: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: verticalScale(Spacing.one),
+          backgroundColor: circleBg,
+          borderColor: theme.border,
+        }}>
+        <Ionicons name={icon} size={scale(32)} color={iconColor} />
       </View>
-      <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+      <Text style={{ fontSize: moderateScale(17), fontWeight: 700, color: theme.text }}>{title}</Text>
       {description ? (
-        <Text style={[styles.description, { color: theme.textSecondary }]}>
+        <Text style={{ fontSize: moderateScale(14), textAlign: 'center', lineHeight: verticalScale(20), maxWidth: scale(280), color: theme.textSecondary }}>
           {description}
         </Text>
       ) : null}
-      {action ? <View style={styles.action}>{action}</View> : null}
+      {action ? <View style={{ marginTop: verticalScale(Spacing.two) }}>{action}</View> : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.six,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.two,
-  },
-  containerCompact: {
-    paddingVertical: Spacing.four,
-  },
-  containerLandscape: {
-    paddingVertical: Spacing.three,
-  },
-  iconWrap: {
-    maxWidth: 72,
-    maxHeight: 72,
-    width: '30%',
-    aspectRatio: 1,
-    borderRadius: 36,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.one,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: 700,
-  },
-  description: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-    maxWidth: 280,
-  },
-  action: {
-    marginTop: Spacing.two,
-  },
-});

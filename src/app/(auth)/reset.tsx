@@ -1,24 +1,25 @@
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
 } from 'react-native';
 
 import { BrandHeader } from '@/components/brand';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
-import { ApiError, resetPassword } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
+import { useResponsive } from '@/hooks/useResponsive';
+import { ApiError, resetPassword } from '@/lib/api';
 
 export default function ResetPasswordScreen() {
   const theme = useTheme();
+  const { scale, verticalScale, moderateScale } = useResponsive();
   const params = useLocalSearchParams<{ token?: string }>();
   const token = typeof params.token === 'string' ? params.token : '';
 
@@ -60,25 +61,36 @@ export default function ResetPasswordScreen() {
       style={{ flex: 1, backgroundColor: theme.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={{
+          flexGrow: 1,
+          padding: scale(Spacing.four),
+          justifyContent: 'center',
+          gap: verticalScale(Spacing.five),
+        }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <BrandHeader tagline="Choose a new password" />
 
         {done ? (
-          <View style={styles.card}>
-            <Text style={styles.icon}>🔐</Text>
-            <Text style={[styles.title, { color: theme.text }]}>Password updated</Text>
-            <Text style={[styles.text, { color: theme.textSecondary }]}>
+          <View style={{
+            gap: verticalScale(Spacing.three),
+            padding: scale(Spacing.four),
+          }}>
+            <Text style={{ fontSize: moderateScale(44), textAlign: 'center' }}>🔐</Text>
+            <Text style={{ fontSize: moderateScale(22), fontWeight: '800', textAlign: 'center', color: theme.text }}>Password updated</Text>
+            <Text style={{ fontSize: moderateScale(15), textAlign: 'center', lineHeight: verticalScale(22), color: theme.textSecondary }}>
               Your password has been reset. Please sign in with your new password.
             </Text>
             <Button title="Sign in" onPress={() => router.replace('/(auth)/login')} />
           </View>
         ) : (
-          <View style={styles.card}>
+          <View style={{
+            gap: verticalScale(Spacing.three),
+            padding: scale(Spacing.four),
+          }}>
             {error ? (
-              <View style={[styles.errorBox, { backgroundColor: theme.dangerSoft }]}>
-                <Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text>
+              <View style={{ borderRadius: moderateScale(14), padding: verticalScale(Spacing.three), backgroundColor: theme.dangerSoft }}>
+                <Text style={{ fontSize: moderateScale(14), fontWeight: '600', lineHeight: verticalScale(20), color: theme.danger }}>{error}</Text>
               </View>
             ) : null}
             <TextField
@@ -88,7 +100,7 @@ export default function ResetPasswordScreen() {
               value={password}
               onChangeText={setPassword}
             />
-            <View style={{ marginTop: Spacing.three }}>
+            <View style={{ marginTop: verticalScale(Spacing.three) }}>
               <TextField
                 label="Confirm password"
                 placeholder="Re-enter password"
@@ -97,12 +109,12 @@ export default function ResetPasswordScreen() {
                 onChangeText={setConfirm}
               />
             </View>
-            <View style={{ marginTop: Spacing.four }}>
+            <View style={{ marginTop: verticalScale(Spacing.four) }}>
               <Button title="Reset password" loading={loading} onPress={onSubmit} />
             </View>
-            <Link href="/(auth)/login" asChild>
-              <Pressable style={styles.back}>
-                <Text style={[styles.linkText, { color: theme.brand }]}>← Back to sign in</Text>
+            <Link href="/forgot-password" asChild>
+              <Pressable style={{ alignItems: 'center', paddingVertical: verticalScale(Spacing.three) }}>
+                <Text style={{ fontSize: moderateScale(14), fontWeight: '700', color: theme.brand }}>← Back to sign in</Text>
               </Pressable>
             </Link>
           </View>
@@ -111,23 +123,3 @@ export default function ResetPasswordScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: Spacing.four,
-    justifyContent: 'center',
-    gap: Spacing.five,
-  },
-  card: {
-    gap: Spacing.three,
-    padding: Spacing.four,
-  },
-  icon: { fontSize: 44, textAlign: 'center' },
-  title: { fontSize: 22, fontWeight: 800, textAlign: 'center' },
-  text: { fontSize: 15, textAlign: 'center', lineHeight: 22 },
-  errorBox: { borderRadius: 14, padding: Spacing.three },
-  errorText: { fontSize: 14, fontWeight: 600, lineHeight: 20 },
-  back: { alignItems: 'center', paddingVertical: Spacing.three },
-  linkText: { fontSize: 14, fontWeight: 700 },
-});

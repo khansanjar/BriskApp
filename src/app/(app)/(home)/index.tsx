@@ -3,15 +3,15 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
 import {
-  ActivityIndicator,
-  Animated,
-  Modal,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Animated,
+    Modal,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -19,8 +19,8 @@ import { RideMap } from '@/components/RideMap';
 import { Avatar } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { DriverStatusMeta, Spacing } from '@/constants/theme';
-import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { getDashboard, type Booking, type DashboardData, type User } from '@/lib/api';
 import { isRideMissed } from '@/lib/booking-status';
 import { formatCurrency, formatTime } from '@/lib/format';
@@ -67,7 +67,7 @@ const todayKey = localKey(0);
 export default function DashboardScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { isLandscape, screenHeight, scale, verticalScale, wp, hp } = useResponsive();
+  const { isLandscape, screenHeight, scale, verticalScale, moderateScale, wp, hp } = useResponsive();
   const [data, setData] = useState<DashboardData | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -154,28 +154,46 @@ export default function DashboardScreen() {
   const openBooking = (id: number) => router.push(`/(app)/(home)/booking/${id}`);
 
   return (
-    <View style={styles.root}>
+    <View style={{ flex: 1 }}>
       <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.brand} />
 
       {/* Full-screen map background */}
-      <View style={styles.mapContainer}>
+      <View style={{ ...StyleSheet.absoluteFill }}>
         <RideMap booking={featured} />
       </View>
 
       {/* Fixed top header */}
-      <View style={[styles.header, { paddingTop: insets.top + Spacing.three, backgroundColor: theme.surface }]}>
-        <View style={styles.greetingRow}>
-          <View style={styles.greetingCopy}>
-            <Text style={[styles.greetingText, { color: theme.text }]}>
+      <View style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+        paddingTop: insets.top + verticalScale(Spacing.three),
+        paddingHorizontal: scale(Spacing.four),
+        paddingBottom: verticalScale(Spacing.three),
+        backgroundColor: theme.surface,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.three) }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: moderateScale(22), fontWeight: '800', color: theme.text }}>
               Hi {user?.user_fname ?? 'Driver'}
             </Text>
 
             {nextRide ? (
-              <Animated.Text style={[styles.neonText, { opacity: blinkAnim }]}>
+              <Animated.Text style={{
+                fontSize: moderateScale(18),
+                fontWeight: '900',
+                color: '#ff0000c0',
+                marginTop: verticalScale(2),
+                textShadowOffset: { width: 0, height: 0 },
+                textShadowRadius: 8,
+                opacity: blinkAnim,
+              }}>
                 Next ride {format12HourTime(nextRide.pickup_time)}
               </Animated.Text>
             ) : (
-              <Text style={[styles.greetingSub, { color: theme.textSecondary }]}>
+              <Text style={{ fontSize: moderateScale(14), fontWeight: '500', marginTop: verticalScale(2), color: theme.textSecondary }}>
                 You are online
               </Text>
             )}
@@ -184,27 +202,52 @@ export default function DashboardScreen() {
             firstName={user?.user_fname}
             lastName={user?.user_lname}
             photo={user?.profile_photo ?? null}
-            size={48}
+            size={scale(48)}
           />
         </View>
       </View>
 
       {/* Floating bottom cards */}
-      <View style={[styles.bottomCardsContainer, isLandscape && styles.bottomCardsContainerLandscape]}>
+      <View style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: isLandscape ? verticalScale(20) : verticalScale(100),
+        marginHorizontal: isLandscape ? scale(Spacing.two) : scale(Spacing.four),
+        gap: verticalScale(Spacing.three),
+        zIndex: 10,
+      }}>
         {activeToday && (
           <Pressable
             onPress={() => openBooking(activeToday.booking_id)}
-            style={({ pressed }) => (pressed ? styles.pressed : null)}>
-            <View style={[styles.activeRideCard, { backgroundColor: theme.surface }]}>
-              <View style={styles.activeRideHeader}>
-                <View style={[styles.activeRideIcon, { backgroundColor: theme.brandSoft }]}>
-                  <Ionicons name="navigate" size={20} color={theme.brand} />
+            style={({ pressed }) => (pressed ? { opacity: 0.92 } : null)}>
+            <View style={{
+              borderRadius: moderateScale(20),
+              paddingHorizontal: scale(Spacing.three),
+              paddingVertical: verticalScale(Spacing.two),
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.15,
+              shadowRadius: 10,
+              elevation: 6,
+              backgroundColor: theme.surface,
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+                <View style={{
+                  width: scale(36),
+                  height: scale(36),
+                  borderRadius: moderateScale(10),
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: theme.brandSoft,
+                }}>
+                  <Ionicons name="navigate" size={scale(20)} color={theme.brand} />
                 </View>
-                <View style={styles.activeRideCopy}>
-                  <Text style={[styles.activeRideTitle, { color: theme.text }]} numberOfLines={1}>
+                <View style={{ flex: 1, gap: verticalScale(1), minWidth: 0 }}>
+                  <Text style={{ fontSize: moderateScale(13), fontWeight: '700', flexShrink: 1, color: theme.text }} numberOfLines={1}>
                     {activeToday.pickup_location}
                   </Text>
-                  <Text numberOfLines={1} style={[styles.activeRideStatus, { color: theme.textSecondary, flexShrink: 1 }]}>
+                  <Text numberOfLines={1} style={{ fontSize: moderateScale(11), fontWeight: '500', color: theme.textSecondary, flexShrink: 1 }}>
                     {DriverStatusMeta[activeToday.driver_status]?.label ?? activeToday.driver_status}
                   </Text>
                 </View>
@@ -215,28 +258,51 @@ export default function DashboardScreen() {
         )}
 
         {/* Earnings card */}
-        <View style={[styles.earningsCard, { backgroundColor: theme.brand }]}>
-          <View style={styles.earningsCol}>
-            <Text style={[styles.earningsLabel, { color: theme.brandText }]}>Today&apos;s earnings</Text>
-            <Text style={[styles.earningsAmount, { color: theme.brandText }]} numberOfLines={1} adjustsFontSizeToFit>
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: verticalScale(Spacing.two),
+          paddingHorizontal: scale(Spacing.four),
+          borderRadius: moderateScale(20),
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.15,
+          shadowRadius: 10,
+          elevation: 6,
+          backgroundColor: theme.brand,
+        }}>
+          <View style={{ flex: 1, gap: verticalScale(2) }}>
+            <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Today&apos;s earnings</Text>
+            <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }} numberOfLines={1} adjustsFontSizeToFit>
               {data ? formatCurrency(dayEarnings?.amount ?? 0) : '—'}
             </Text>
           </View>
-          <View style={[styles.earningsDivider, { backgroundColor: theme.brandText }]} />
-          <View style={styles.earningsCol}>
-            <Text style={[styles.earningsLabel, { color: theme.brandText }]}>Rides today</Text>
-            <Text style={[styles.earningsAmount, { color: theme.brandText }]}>
+          <View style={{ width: scale(1), opacity: 0.3, marginHorizontal: scale(Spacing.three), backgroundColor: theme.brandText }} />
+          <View style={{ flex: 1, gap: verticalScale(2) }}>
+            <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Rides today</Text>
+            <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }}>
               {data ? dayEarnings?.rides_count ?? 0 : '—'}
             </Text>
           </View>
         </View>
 
         {/* Upcoming rides card */}
-        <View style={[styles.upcomingCard, { backgroundColor: theme.surface }]}>
-          <View style={styles.upcomingHeader}>
-            <Text style={[styles.upcomingTitle, { color: theme.text }]}>Upcoming rides</Text>
+        <View style={{
+          borderRadius: moderateScale(20),
+          paddingHorizontal: scale(Spacing.four),
+          paddingVertical: verticalScale(Spacing.two),
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.15,
+          shadowRadius: 10,
+          elevation: 6,
+          minHeight: verticalScale(100),
+          backgroundColor: theme.surface,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: verticalScale(Spacing.one) }}>
+            <Text style={{ fontSize: moderateScale(14), fontWeight: '700', color: theme.text }}>Upcoming rides</Text>
             <Pressable onPress={() => setShowAllRides(true)} hitSlop={8}>
-              <Text style={[styles.viewAll, { color: theme.brand }]}>View All</Text>
+              <Text style={{ fontSize: moderateScale(15), fontWeight: '600', color: theme.brand }}>View All</Text>
             </Pressable>
           </View>
 
@@ -247,7 +313,7 @@ export default function DashboardScreen() {
           ) : assignedToday[0] ? (
             <Pressable
               onPress={() => openBooking(assignedToday[0].booking_id)}
-              style={({ pressed }) => (pressed ? styles.pressed : null)}>
+              style={({ pressed }) => (pressed ? { opacity: 0.92 } : null)}>
               <CardCompact booking={assignedToday[0]} />
             </Pressable>
           ) : (
@@ -262,13 +328,32 @@ export default function DashboardScreen() {
 
       {/* Modal: all rides for the current day */}
       <Modal visible={showAllRides} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: theme.surface, maxHeight: isLandscape ? hp(70) : '80%' }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>Today&apos;s rides</Text>
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(21, 19, 43, 0.55)',
+          justifyContent: 'flex-end',
+        }}>
+          <View style={{
+            borderTopLeftRadius: moderateScale(24),
+            borderTopRightRadius: moderateScale(24),
+            paddingHorizontal: scale(Spacing.four),
+            paddingTop: verticalScale(Spacing.three),
+            paddingBottom: verticalScale(Spacing.six),
+            maxHeight: isLandscape ? hp(70) : '80%',
+            backgroundColor: theme.surface,
+          }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: verticalScale(Spacing.three) }}>
+              <Text style={{ fontSize: moderateScale(20), fontWeight: '800', color: theme.text }}>Today&apos;s rides</Text>
               <Pressable onPress={() => setShowAllRides(false)} hitSlop={8}>
-                <View style={[styles.modalClose, { backgroundColor: theme.backgroundElement }]}>
-                  <Ionicons name="close" size={20} color={theme.text} />
+                <View style={{
+                  width: scale(36),
+                  height: scale(36),
+                  borderRadius: moderateScale(18),
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: theme.backgroundElement,
+                }}>
+                  <Ionicons name="close" size={scale(20)} color={theme.text} />
                 </View>
               </Pressable>
             </View>
@@ -276,7 +361,7 @@ export default function DashboardScreen() {
               {assignedToday.length === 0 ? (
                 <EmptyStateInline compact icon="car-outline" title="No rides" description="No assigned rides scheduled for today." />
               ) : (
-                <View style={styles.modalList}>
+                <View style={{ gap: verticalScale(Spacing.three) }}>
                   {assignedToday.map((item) => (
                     <Pressable
                       key={item.booking_id}
@@ -284,7 +369,7 @@ export default function DashboardScreen() {
                         setShowAllRides(false);
                         openBooking(item.booking_id);
                       }}
-                      style={({ pressed }) => (pressed ? styles.pressed : null)}>
+                      style={({ pressed }) => (pressed ? { opacity: 0.92 } : null)}>
                       <CardCompact booking={item} />
                     </Pressable>
                   ))}
@@ -300,24 +385,46 @@ export default function DashboardScreen() {
 
 function CardCompact({ booking }: { booking: Booking }) {
   const theme = useTheme();
+  const { scale, verticalScale, moderateScale } = useResponsive();
   return (
-    <View style={[styles.compactCard, { borderTopColor: theme.border }]}>
-      <View style={styles.compactTop}>
-        <View style={[styles.compactIcon, { backgroundColor: theme.brandSoft }]}>
-          <Ionicons name="car-outline" size={22} color={theme.brand} />
+    <View style={{
+      borderRadius: moderateScale(16),
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.border,
+      overflow: 'hidden',
+    }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: scale(Spacing.two), padding: scale(Spacing.two) }}>
+        <View style={{
+          width: scale(40),
+          height: scale(40),
+          borderRadius: moderateScale(12),
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.brandSoft,
+        }}>
+          <Ionicons name="car-outline" size={scale(22)} color={theme.brand} />
         </View>
-        <View style={styles.compactRoute}>
-          <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
+        <View style={{ flex: 1, gap: verticalScale(2), minWidth: 0 }}>
+          <Text style={{ fontSize: moderateScale(14), fontWeight: '700', flexShrink: 1, color: theme.text }} numberOfLines={1}>
             {booking.pickup_location}
           </Text>
-          <Text style={[styles.compactArrow, { color: theme.textSecondary }]}>↓</Text>
-          <Text style={[styles.compactPoint, { color: theme.text }]} numberOfLines={1}>
+          <Text style={{ fontSize: moderateScale(12), fontWeight: '700', marginVertical: verticalScale(2), color: theme.textSecondary }}>↓</Text>
+          <Text style={{ fontSize: moderateScale(14), fontWeight: '700', flexShrink: 1, color: theme.text }} numberOfLines={1}>
             {booking.dropoff_location}
           </Text>
         </View>
         <StatusBadge status={isRideMissed(booking) ? 'missed' : booking.driver_status} />
       </View>
-      <View style={[styles.compactMeta, { borderTopColor: theme.border }]}>
+      <View style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: scale(Spacing.two),
+        paddingTop: verticalScale(Spacing.two),
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: theme.border,
+        paddingHorizontal: scale(Spacing.two),
+        paddingBottom: verticalScale(Spacing.two),
+      }}>
         <Meta icon="time-outline" text={formatTime(booking.pickup_time)} />
         {booking.vehicle_type ? <Meta icon="car-outline" text={booking.vehicle_type} /> : null}
       </View>
@@ -339,18 +446,34 @@ function EmptyStateInline({
   compact?: boolean;
 }) {
   const theme = useTheme();
+  const { scale, verticalScale, moderateScale } = useResponsive();
   const isDanger = tone === 'danger';
   const iconColor = isDanger ? theme.danger : theme.textSecondary;
   const circleBg = isDanger ? theme.dangerSoft : theme.surfaceSecondary;
 
   return (
-    <View style={[styles.emptyContainer, compact && styles.emptyContainerCompact]}>
-      <View style={[styles.emptyIconWrap, { backgroundColor: circleBg, borderColor: theme.border }]}>
-        <Ionicons name={icon ?? 'car-outline'} size={32} color={iconColor} />
+    <View style={{
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: compact ? verticalScale(Spacing.two) : verticalScale(Spacing.three),
+      gap: verticalScale(Spacing.one),
+    }}>
+      <View style={{
+        width: scale(64),
+        height: scale(64),
+        borderRadius: moderateScale(32),
+        borderWidth: 1,
+        borderColor: theme.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: verticalScale(Spacing.one),
+        backgroundColor: circleBg,
+      }}>
+        <Ionicons name={icon ?? 'car-outline'} size={scale(32)} color={iconColor} />
       </View>
-      <Text style={[styles.emptyTitle, { color: theme.text }]}>{title}</Text>
+      <Text style={{ fontSize: moderateScale(15), fontWeight: '700', color: theme.text }}>{title}</Text>
       {description ? (
-        <Text style={[styles.emptyDescription, { color: theme.textSecondary }]}>{description}</Text>
+        <Text style={{ fontSize: moderateScale(13), textAlign: 'center', lineHeight: verticalScale(18), maxWidth: 260, color: theme.textSecondary }}>{description}</Text>
       ) : null}
     </View>
   );
@@ -358,217 +481,11 @@ function EmptyStateInline({
 
 function Meta({ icon, text }: { icon: IoniconName; text: string }) {
   const theme = useTheme();
+  const { scale, moderateScale } = useResponsive();
   return (
-    <View style={styles.meta}>
-      <Ionicons name={icon} size={14} color={theme.textSecondary} />
-      <Text numberOfLines={1} style={[styles.metaText, { color: theme.textSecondary, flexShrink: 1 }]}>{text}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(6) }}>
+      <Ionicons name={icon} size={scale(14)} color={theme.textSecondary} />
+      <Text numberOfLines={1} style={{ fontSize: moderateScale(13), fontWeight: '500', color: theme.textSecondary, flexShrink: 1 }}>{text}</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  mapContainer: {
-    ...StyleSheet.absoluteFill,
-  },
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.three,
-  },
-  greetingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-  },
-  greetingCopy: { flex: 1 },
-  greetingText: { fontSize: 22, fontWeight: '800' },
-  greetingSub: { fontSize: 14, fontWeight: '500', marginTop: 2 },
-
-  // Red Neon Blinking Styling
-  neonText: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#ff0000c0',
-    marginTop: 2,
-    // textShadowColor: '#ff2600',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-  },
-
-  bottomCardsContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 100,
-    marginHorizontal: Spacing.four,
-    gap: Spacing.three,
-    zIndex: 10,
-  },
-  bottomCardsContainerLandscape: {
-    bottom: 20,
-    marginHorizontal: Spacing.two,
-  },
-  earningsCard: {
-    flexDirection: 'row',
-    // justifyContent:"center",
-    alignItems: 'center',
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.four,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  earningsCol: { flex: 1, gap: 2 },
-  earningsDivider: { width: 1, opacity: 0.3, marginHorizontal: Spacing.three },
-  earningsLabel: { fontSize: 11, fontWeight: '600', opacity: 0.85 },
-  earningsAmount: { fontSize: 20, fontWeight: '800', lineHeight: 24 },
-
-  activeRideCard: {
-    borderRadius: 20,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  activeRideHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  activeRideIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeRideCopy: { flex: 1, gap: 1, minWidth: 0 },
-  activeRideTitle: { fontSize: 13, fontWeight: '700', flexShrink: 1 },
-  activeRideStatus: { fontSize: 11, fontWeight: '500' },
-
-  upcomingCard: {
-    borderRadius: 20,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 6,
-    minHeight: 100,
-  },
-  upcomingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.one,
-  },
-  upcomingTitle: { fontSize: 14, fontWeight: '700' },
-  viewAll: { fontSize: 15, fontWeight: '600' },
-
-  compactCard: {
-    borderRadius: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-  },
-  compactTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.two,
-    padding: Spacing.two,
-  },
-  compactIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  compactRoute: { flex: 1, gap: 2, minWidth: 0 },
-  compactPoint: { fontSize: 14, fontWeight: '700', flexShrink: 1 },
-  compactArrow: { fontSize: 12, fontWeight: '700', marginVertical: 2 },
-  compactMeta: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-    paddingTop: Spacing.two,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: Spacing.two,
-    paddingBottom: Spacing.two,
-  },
-
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.three,
-    gap: Spacing.one,
-  },
-  emptyContainerCompact: {
-    paddingVertical: Spacing.two,
-  },
-  emptyIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.one,
-  },
-  emptyTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  emptyDescription: {
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 18,
-    maxWidth: 260,
-  },
-
-  pressed: { opacity: 0.92 },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: { fontSize: 13, fontWeight: '500' },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(21, 19, 43, 0.55)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.six,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.three,
-  },
-  modalTitle: { fontSize: 20, fontWeight: '800' },
-  modalClose: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalList: { gap: Spacing.three },
-});

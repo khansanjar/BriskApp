@@ -1,9 +1,9 @@
 // src/components/ui/button.tsx
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
-import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
+import { useResponsive } from '@/hooks/useResponsive';
 
 type Variant = 'primary' | 'secondary' | 'destructive';
 
@@ -18,7 +18,7 @@ interface Props {
 
 export function Button({ title, onPress, variant = 'primary', loading, disabled, style }: Props) {
   const theme = useTheme();
-  const { isLandscape } = useResponsive();
+  const { isLandscape, scale, verticalScale, moderateScale } = useResponsive();
 
   const bg = variant === 'primary' ? theme.brand : variant === 'destructive' ? theme.danger : theme.surface;
   const borderColor = variant === 'secondary' ? theme.border : bg;
@@ -32,8 +32,13 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
       onPress={onPress}
       disabled={disabled || loading}
       style={({ pressed }) => [
-        styles.base,
         {
+          borderRadius: moderateScale(16),
+          borderWidth: 1,
+          paddingVertical: isLandscape ? verticalScale(Spacing.two) : verticalScale(Spacing.three),
+          paddingHorizontal: isLandscape ? scale(Spacing.three) : scale(Spacing.four),
+          alignItems: 'center',
+          justifyContent: 'center',
           backgroundColor: bg,
           borderColor,
           shadowColor: shadow,
@@ -42,49 +47,14 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
           shadowRadius: 12,
           elevation: isAction && !disabled && !loading ? 4 : 0,
         },
-        disabled || loading ? styles.disabled : null,
-        pressed && !disabled && !loading ? styles.pressed : null,
-        isLandscape && styles.baseLandscape,
+        disabled || loading ? { opacity: 0.5 } : null,
+        pressed && !disabled && !loading ? { opacity: 0.85 } : null,
         style,
       ]}>
-      <View style={styles.contentRow}>
-        <Text style={[styles.label, { color: textColor }]}>{title}</Text>
-        {loading && <ActivityIndicator color={textColor} style={styles.spinner} />}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: scale(Spacing.two) }}>
+        <Text style={{ fontSize: moderateScale(16), fontWeight: '700', color: textColor }}>{title}</Text>
+        {loading && <ActivityIndicator color={textColor} style={{ marginLeft: scale(Spacing.two) }} />}
       </View>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  baseLandscape: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-  },
-  contentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-  },
-  spinner: {
-    marginLeft: Spacing.two,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-});

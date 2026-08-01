@@ -1,8 +1,8 @@
-import { StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
+import { Text, TextInput, type TextInputProps, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
-import { useResponsive } from '@/hooks/useResponsive';
 import { useTheme } from '@/hooks/use-theme';
+import { useResponsive } from '@/hooks/useResponsive';
 
 export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   label?: string;
@@ -20,33 +20,35 @@ export function TextField({
   ...rest
 }: TextFieldProps) {
   const theme = useTheme();
-  const { isLandscape } = useResponsive();
+  const { isLandscape, scale, verticalScale, moderateScale } = useResponsive();
   return (
-    <View style={[styles.wrapper, containerStyle]}>
+    <View style={[{ width: '100%' }, containerStyle]}>
       {label ? <TextLabel>{label}</TextLabel> : null}
       <View
-        style={[
-          styles.inputContainer,
-          {
-            backgroundColor: theme.surface,
-            borderColor: error ? theme.danger : theme.border,
-          },
-          isLandscape && styles.inputContainerLandscape,
-        ]}>
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          borderWidth: 1,
+          borderRadius: moderateScale(16),
+          paddingHorizontal: scale(Spacing.three),
+          minHeight: isLandscape ? verticalScale(Spacing.five + 4) : verticalScale(Spacing.six + 4),
+          backgroundColor: theme.surface,
+          borderColor: error ? theme.danger : theme.border,
+        }}>
         {leftIcon ? (
-          <TextLabel style={{ color: theme.textSecondary, marginRight: Spacing.two }}>
+          <TextLabel style={{ color: theme.textSecondary, marginRight: scale(Spacing.two) }}>
             {leftIcon}
           </TextLabel>
         ) : null}
         <TextInput
           placeholder={placeholder}
           placeholderTextColor={theme.textSecondary}
-          style={[styles.input, { color: theme.text }]}
+          style={{ flex: 1, fontSize: moderateScale(16), paddingVertical: verticalScale(Spacing.three), color: theme.text }}
           {...rest}
         />
       </View>
       {error ? (
-        <TextLabel style={{ color: theme.danger, marginTop: Spacing.one }}>{error}</TextLabel>
+        <TextLabel style={{ color: theme.danger, marginTop: verticalScale(Spacing.one) }}>{error}</TextLabel>
       ) : null}
     </View>
   );
@@ -54,33 +56,12 @@ export function TextField({
 
 function TextLabel({ children, style }: { children: React.ReactNode; style?: object }) {
   const theme = useTheme();
+  const { verticalScale, moderateScale } = useResponsive();
   return (
     <View>
-      <Text style={[{ color: theme.textSecondary, fontSize: 13, fontWeight: 600, marginBottom: 6 }, style]}>
+      <Text style={[{ color: theme.textSecondary, fontSize: moderateScale(13), fontWeight: 600, marginBottom: verticalScale(6) }, style]}>
         {children}
       </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: {
-    width: '100%',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: Spacing.three,
-    minHeight: Spacing.six + 4,
-  },
-  inputContainerLandscape: {
-    minHeight: Spacing.five + 4,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    paddingVertical: Spacing.three,
-  },
-});

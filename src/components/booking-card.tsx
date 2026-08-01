@@ -1,16 +1,15 @@
-import React, { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { type ComponentProps } from 'react';
+import { memo, type ComponentProps } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Spacing } from '@/constants/theme';
-import { useResponsive } from '@/hooks/useResponsive';
-import { formatCurrency, formatDate, formatTime } from '@/lib/format';
-import { isRideMissed } from '@/lib/booking-status';
 import { useTheme } from '@/hooks/use-theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import type { Booking } from '@/lib/api';
+import { isRideMissed } from '@/lib/booking-status';
+import { formatCurrency, formatDate, formatTime } from '@/lib/format';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -24,7 +23,7 @@ function Meta({ icon, text, theme }: MetaProps) {
   return (
     <View style={styles.meta}>
       <Ionicons name={icon} size={14} color={theme.textSecondary} />
-      <Text style={[styles.metaText, { color: theme.textSecondary }]} numberOfLines={1} flexShrink={1}>{text}</Text>
+      <Text style={[styles.metaText, { color: theme.textSecondary, flexShrink: 1 }]} numberOfLines={1}>{text}</Text>
     </View>
   );
 }

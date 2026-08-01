@@ -1,13 +1,12 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
 } from 'react-native';
 
 import { BrandHeader } from '@/components/brand';
@@ -16,12 +15,14 @@ import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useResponsive } from '@/hooks/useResponsive';
 import { ApiError, register } from '@/lib/api';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function RegisterScreen() {
   const theme = useTheme();
+  const { scale, verticalScale, moderateScale } = useResponsive();
   const [form, setForm] = useState({
     user_fname: '',
     user_lname: '',
@@ -69,11 +70,16 @@ export default function RegisterScreen() {
 
   if (success) {
     return (
-      <View style={[styles.center, { backgroundColor: theme.background }]}>
-        <View style={styles.successCard}>
-          <Text style={styles.successIcon}>✅</Text>
-          <Text style={[styles.successTitle, { color: theme.text }]}>You're on the list!</Text>
-          <Text style={[styles.successText, { color: theme.textSecondary }]}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: scale(Spacing.four), backgroundColor: theme.background }}>
+        <View style={{
+          maxWidth: 420,
+          gap: verticalScale(Spacing.three),
+          alignItems: 'center',
+          padding: scale(Spacing.four),
+        }}>
+          <Text style={{ fontSize: moderateScale(48) }}>✅</Text>
+          <Text style={{ fontSize: moderateScale(22), fontWeight: '800', color: theme.text }}>You're on the list!</Text>
+          <Text style={{ fontSize: moderateScale(15), textAlign: 'center', lineHeight: verticalScale(22), color: theme.textSecondary }}>
             Your account is pending admin approval. We'll notify you by email as soon as you're
             approved.
           </Text>
@@ -88,19 +94,33 @@ export default function RegisterScreen() {
       style={{ flex: 1, backgroundColor: theme.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={{
+          flexGrow: 1,
+          padding: scale(Spacing.four),
+          gap: verticalScale(Spacing.three),
+          paddingTop: verticalScale(Spacing.six),
+        }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <BrandHeader tagline="Create your driver account" />
 
         {serverError ? (
-          <View style={[styles.errorBox, { backgroundColor: theme.dangerSoft }]}>
-            <Text style={[styles.errorText, { color: theme.danger }]}>{serverError}</Text>
+          <View style={{
+            borderRadius: moderateScale(14),
+            padding: verticalScale(Spacing.three),
+            backgroundColor: theme.dangerSoft,
+          }}>
+            <Text style={{
+              fontSize: moderateScale(14),
+              fontWeight: '600',
+              lineHeight: verticalScale(20),
+              color: theme.danger,
+            }}>{serverError}</Text>
           </View>
         ) : null}
 
-        <View style={styles.row}>
-          <View style={styles.half}>
+        <View style={{ flexDirection: 'row', gap: scale(Spacing.three) }}>
+          <View style={{ flex: 1 }}>
             <TextField
               label="First name"
               placeholder="John"
@@ -109,7 +129,7 @@ export default function RegisterScreen() {
               error={errors.user_fname}
             />
           </View>
-          <View style={styles.half}>
+          <View style={{ flex: 1 }}>
             <TextField
               label="Last name"
               placeholder="Smith"
@@ -130,7 +150,7 @@ export default function RegisterScreen() {
           onChangeText={(v) => update('user_email', v)}
           error={errors.user_email}
         />
-        <View style={{ marginTop: Spacing.three }}>
+        <View style={{ marginTop: verticalScale(Spacing.three) }}>
           <TextField
             label="Phone"
             placeholder="+34 600 000 000"
@@ -140,7 +160,7 @@ export default function RegisterScreen() {
             error={errors.userphone}
           />
         </View>
-        <View style={{ marginTop: Spacing.three }}>
+        <View style={{ marginTop: verticalScale(Spacing.three) }}>
           <TextField
             label="Password"
             placeholder="At least 8 characters"
@@ -151,19 +171,24 @@ export default function RegisterScreen() {
           />
         </View>
 
-        <View style={{ marginTop: Spacing.four }}>
+        <View style={{ marginTop: verticalScale(Spacing.four) }}>
           <Button title="Create account" loading={loading} onPress={onSubmit} />
         </View>
 
         {/* <SocialButtons onError={setServerError} disabled={loading} /> */}
 
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingTop: verticalScale(Spacing.two),
+        }}>
+          <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary }}>
             Already registered?
           </Text>
           <Link href="/(auth)/login" asChild>
             <Pressable>
-              <Text style={[styles.linkText, { color: theme.brand }]}> Sign in</Text>
+              <Text style={{ fontSize: moderateScale(14), fontWeight: '700', color: theme.brand }}> Sign in</Text>
             </Pressable>
           </Link>
         </View>
@@ -171,44 +196,3 @@ export default function RegisterScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: Spacing.four,
-    gap: Spacing.three,
-    paddingTop: Spacing.six,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: Spacing.three,
-  },
-  half: { flex: 1 },
-  errorBox: {
-    borderRadius: 14,
-    padding: Spacing.three,
-  },
-  errorText: {
-    fontSize: 14,
-    fontWeight: 600,
-    lineHeight: 20,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: Spacing.two,
-  },
-  footerText: { fontSize: 14 },
-  linkText: { fontSize: 14, fontWeight: 700 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
-  successCard: {
-    maxWidth: 420,
-    gap: Spacing.three,
-    alignItems: 'center',
-    padding: Spacing.four,
-  },
-  successIcon: { fontSize: 48 },
-  successTitle: { fontSize: 22, fontWeight: 800 },
-  successText: { fontSize: 15, textAlign: 'center', lineHeight: 22 },
-});
