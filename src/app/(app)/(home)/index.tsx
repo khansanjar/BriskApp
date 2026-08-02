@@ -1,7 +1,7 @@
 // src/app/(app)/(home)/index.tsx
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
+import { useCallback, useRef, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RideMap } from '@/components/RideMap';
 import { Avatar } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { DriverStatusMeta, Spacing, TAB_BAR_BOTTOM_OFFSET, TAB_BAR_HEIGHT, ScreenHorizontalMargin } from '@/constants/theme';
+import { DriverStatusMeta, ScreenHorizontalMargin, Spacing, TAB_BAR_BOTTOM_OFFSET, TAB_BAR_HEIGHT } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { getDashboard, type Booking, type DashboardData, type User } from '@/lib/api';
@@ -40,7 +40,6 @@ function localKey(offsetDays: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// 12-Hour Time Formatter
 function format12HourTime(timeStr: string): string {
   if (!timeStr) return '';
   const dateObj = new Date(timeStr);
@@ -67,14 +66,13 @@ const todayKey = localKey(0);
 export default function DashboardScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { isLandscape, screenHeight, scale, verticalScale, moderateScale, wp, hp } = useResponsive();
+  const { isLandscape, scale, verticalScale, moderateScale, hp } = useResponsive();
   const [data, setData] = useState<DashboardData | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAllRides, setShowAllRides] = useState(false);
 
-  // Blinking animation for Red Neon Next Ride
   const blinkAnim = useRef(new Animated.Value(1)).current;
 
   const load = useCallback(async () => {
@@ -87,17 +85,7 @@ export default function DashboardScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!cancelled) await load();
-      if (!cancelled) getUser<User>().then(setUser);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [load]);
-
+  // Sirf useFocusEffect rakha hai taake double network calls na hon
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
@@ -123,27 +111,28 @@ export default function DashboardScreen() {
   const featured = activeToday ?? assignedToday[0] ?? null;
   const nextRide = assignedToday[0] ?? null;
 
-  // Red Neon Blinking loop trigger
-  useEffect(() => {
-    if (nextRide) {
-      const animation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(blinkAnim, {
-            toValue: 0.15,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(blinkAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      animation.start();
-      return () => animation.stop();
-    }
-  }, [nextRide, blinkAnim]);
+  useFocusEffect(
+    useCallback(() => {
+      if (nextRide) {
+        const animation = Animated.loop(
+          Animated.sequence([
+            Animated.timing(blinkAnim, {
+              toValue: 0.15,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+            Animated.timing(blinkAnim, {
+              toValue: 1,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+          ])
+        );
+        animation.start();
+        return () => animation.stop();
+      }
+    }, [nextRide, blinkAnim])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -155,10 +144,8 @@ export default function DashboardScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.brand} />
-
       {/* Full-screen map background */}
-      <View style={{ ...StyleSheet.absoluteFill }}>
+      <View style={{ ...StyleSheet.absoluteFillObject }}>
         <RideMap booking={featured} />
       </View>
 
@@ -186,8 +173,6 @@ export default function DashboardScreen() {
                 fontWeight: '900',
                 color: '#ff0000c0',
                 marginTop: verticalScale(2),
-                textShadowOffset: { width: 0, height: 0 },
-                textShadowRadius: 8,
                 opacity: blinkAnim,
               }}>
                 Next ride {format12HourTime(nextRide.pickup_time)}
@@ -207,131 +192,147 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* Floating bottom cards */}
-      <View style={{
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: verticalScale(insets.bottom + TAB_BAR_BOTTOM_OFFSET + TAB_BAR_HEIGHT + Spacing.three),
-        marginHorizontal: ScreenHorizontalMargin,
-        gap: verticalScale(Spacing.three),
-        zIndex: 10,
-      }}>
-        {activeToday && (
-          <Pressable
-            onPress={() => openBooking(activeToday.booking_id)}
-            style={({ pressed }) => (pressed ? { opacity: 0.92 } : null)}>
-            <View style={{
-              borderRadius: moderateScale(20),
-              paddingHorizontal: scale(Spacing.three),
-              paddingVertical: verticalScale(Spacing.two),
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: scale(6) },
-              shadowOpacity: 0.15,
-              shadowRadius: scale(10),
-              elevation: 6,
-              backgroundColor: theme.surface,
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
-                <View style={{
-                  width: scale(36),
-                  height: scale(36),
-                  borderRadius: moderateScale(10),
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: theme.brandSoft,
-                }}>
-                  <Ionicons name="navigate" size={scale(20)} color={theme.brand} />
-                </View>
-                <View style={{ flex: 1, gap: verticalScale(1), minWidth: 0 }}>
-                  <Text style={{ fontSize: moderateScale(13), fontWeight: '700', flexShrink: 1, color: theme.text }} numberOfLines={1}>
-                    {activeToday.pickup_location}
-                  </Text>
-                  <Text numberOfLines={1} style={{ fontSize: moderateScale(11), fontWeight: '500', color: theme.textSecondary, flexShrink: 1 }}>
-                    {DriverStatusMeta[activeToday.driver_status]?.label ?? activeToday.driver_status}
-                  </Text>
-                </View>
-                <StatusBadge status={activeToday.driver_status} />
-              </View>
-            </View>
-          </Pressable>
-        )}
-
-        {/* Earnings card */}
+      {/* Floating Overlay for pull-to-refresh & controls */}
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.brand}
+            progressViewOffset={insets.top + 60}
+          />
+        }
+      >
         <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingVertical: verticalScale(Spacing.two),
-          paddingHorizontal: scale(Spacing.four),
-          borderRadius: moderateScale(20),
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: scale(6) },
-          shadowOpacity: 0.15,
-          shadowRadius: scale(10),
-          elevation: 6,
-          backgroundColor: theme.brand,
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: insets.bottom + verticalScale(TAB_BAR_BOTTOM_OFFSET + TAB_BAR_HEIGHT + Spacing.three),
+          marginHorizontal: ScreenHorizontalMargin,
+          gap: verticalScale(Spacing.three),
+          zIndex: 10,
         }}>
-          <View style={{ flex: 1, gap: verticalScale(2) }}>
-            <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Today&apos;s earnings</Text>
-            <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }} numberOfLines={1} adjustsFontSizeToFit>
-              {data ? formatCurrency(dayEarnings?.amount ?? 0) : '—'}
-            </Text>
-          </View>
-          <View style={{ width: scale(1), opacity: 0.3, marginHorizontal: scale(Spacing.three), backgroundColor: theme.brandText, borderWidth: scale(0) }} />
-          <View style={{ flex: 1, gap: verticalScale(2) }}>
-            <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Rides today</Text>
-            <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }}>
-              {data ? dayEarnings?.rides_count ?? 0 : '—'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Upcoming rides card */}
-        <View style={{
-          borderRadius: moderateScale(20),
-          paddingHorizontal: scale(Spacing.four),
-          paddingVertical: verticalScale(Spacing.two),
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: scale(6) },
-          shadowOpacity: 0.15,
-          shadowRadius: scale(10),
-          elevation: 6,
-          minHeight: verticalScale(100),
-          backgroundColor: theme.surface,
-        }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: verticalScale(Spacing.one) }}>
-            <Text style={{ fontSize: moderateScale(14), fontWeight: '700', color: theme.text }}>Upcoming rides</Text>
-            <Pressable onPress={() => setShowAllRides(true)} hitSlop={8}>
-              <Text style={{ fontSize: moderateScale(15), fontWeight: '600', color: theme.brand }}>View All</Text>
-            </Pressable>
-          </View>
-
-          {error && data == null ? (
-            <EmptyStateInline icon="alert-circle-outline" tone="danger" title="Something went wrong" description={error} />
-          ) : !data ? (
-            <ActivityIndicator color={theme.brand} style={{ padding: Spacing.three }} />
-          ) : assignedToday[0] ? (
+          {activeToday && (
             <Pressable
-              onPress={() => openBooking(assignedToday[0].booking_id)}
+              onPress={() => openBooking(activeToday.booking_id)}
               style={({ pressed }) => (pressed ? { opacity: 0.92 } : null)}>
-              <CardCompact booking={assignedToday[0]} />
+              <View style={{
+                borderRadius: moderateScale(20),
+                paddingHorizontal: scale(Spacing.three),
+                paddingVertical: verticalScale(Spacing.two),
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: scale(6) },
+                shadowOpacity: 0.15,
+                shadowRadius: scale(10),
+                elevation: 6,
+                backgroundColor: theme.surface,
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+                  <View style={{
+                    width: scale(36),
+                    height: scale(36),
+                    borderRadius: moderateScale(10),
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: theme.brandSoft,
+                  }}>
+                    <Ionicons name="navigate" size={scale(20)} color={theme.brand} />
+                  </View>
+                  <View style={{ flex: 1, gap: verticalScale(1), minWidth: 0 }}>
+                    <Text style={{ fontSize: moderateScale(13), fontWeight: '700', flexShrink: 1, color: theme.text }} numberOfLines={1}>
+                      {activeToday.pickup_location}
+                    </Text>
+                    <Text numberOfLines={1} style={{ fontSize: moderateScale(11), fontWeight: '500', color: theme.textSecondary, flexShrink: 1 }}>
+                      {DriverStatusMeta[activeToday.driver_status]?.label ?? activeToday.driver_status}
+                    </Text>
+                  </View>
+                  <StatusBadge status={activeToday.driver_status} />
+                </View>
+              </View>
             </Pressable>
-          ) : (
-            <EmptyStateInline
-              icon="car-outline"
-              title="No upcoming rides"
-              description="You have no assigned rides remaining today."
-            />
           )}
+
+          {/* Earnings card */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: verticalScale(Spacing.two),
+            paddingHorizontal: scale(Spacing.four),
+            borderRadius: moderateScale(20),
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: scale(6) },
+            shadowOpacity: 0.15,
+            shadowRadius: scale(10),
+            elevation: 6,
+            backgroundColor: theme.brand,
+          }}>
+            <View style={{ flex: 1, gap: verticalScale(2) }}>
+              <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Today&apos;s earnings</Text>
+              <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }} numberOfLines={1} adjustsFontSizeToFit>
+                {data ? formatCurrency(dayEarnings?.amount ?? 0) : '—'}
+              </Text>
+            </View>
+
+            {/* Fixed line divider */}
+            <View style={{ width: scale(1), alignSelf: 'stretch', opacity: 0.3, marginHorizontal: scale(Spacing.three), backgroundColor: theme.brandText }} />
+
+            <View style={{ flex: 1, gap: verticalScale(2) }}>
+              <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Rides today</Text>
+              <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }}>
+                {data ? dayEarnings?.rides_count ?? 0 : '—'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Upcoming rides card */}
+          <View style={{
+            borderRadius: moderateScale(20),
+            paddingHorizontal: scale(Spacing.four),
+            paddingVertical: verticalScale(Spacing.two),
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: scale(6) },
+            shadowOpacity: 0.15,
+            shadowRadius: scale(10),
+            elevation: 6,
+            minHeight: verticalScale(100),
+            backgroundColor: theme.surface,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: verticalScale(Spacing.one) }}>
+              <Text style={{ fontSize: moderateScale(14), fontWeight: '700', color: theme.text }}>Upcoming rides</Text>
+              <Pressable onPress={() => setShowAllRides(true)} hitSlop={8}>
+                <Text style={{ fontSize: moderateScale(15), fontWeight: '600', color: theme.brand }}>View All</Text>
+              </Pressable>
+            </View>
+
+            {error && data == null ? (
+              <EmptyStateInline icon="alert-circle-outline" tone="danger" title="Something went wrong" description={error} />
+            ) : !data ? (
+              <ActivityIndicator color={theme.brand} style={{ padding: Spacing.three }} />
+            ) : assignedToday[0] ? (
+              <Pressable
+                onPress={() => openBooking(assignedToday[0].booking_id)}
+                style={({ pressed }) => (pressed ? { opacity: 0.92 } : null)}>
+                <CardCompact booking={assignedToday[0]} />
+              </Pressable>
+            ) : (
+              <EmptyStateInline
+                icon="car-outline"
+                title="No upcoming rides"
+                description="You have no assigned rides remaining today."
+              />
+            )}
+          </View>
         </View>
-      </View>
+      </ScrollView>
 
       {/* Modal: all rides for the current day */}
       <Modal visible={showAllRides} animationType="slide" transparent>
         <View style={{
           flex: 1,
           backgroundColor: 'rgba(21, 19, 43, 0.55)',
-          justifyContent: 'flex-end',
+          justify: 'flex-end',
         }}>
           <View style={{
             borderTopLeftRadius: moderateScale(24),
@@ -357,7 +358,7 @@ export default function DashboardScreen() {
                 </View>
               </Pressable>
             </View>
-            <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(Spacing.six + insets.bottom + Spacing.three) }} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(Spacing.six + Spacing.three) + insets.bottom }} showsVerticalScrollIndicator={false}>
               {assignedToday.length === 0 ? (
                 <EmptyStateInline compact icon="car-outline" title="No rides" description="No assigned rides scheduled for today." />
               ) : (
