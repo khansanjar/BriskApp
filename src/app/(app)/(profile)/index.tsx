@@ -23,16 +23,15 @@ const MODES: { key: ThemeMode; label: string; icon: 'phone-portrait-outline' | '
   { key: 'dark', label: 'Dark', icon: 'moon-outline' },
 ];
 
-// Helper function: Update ID ko mask (hide) karne ke liye
-function formatUpdateId(id?: string | null, startLen = 3, endLen = 3): string {
+// Helper function: Update ID ko 12-character format mein mask karne ke liye (4 Start + 4 Stars + 4 End)
+function formatUpdateId(id?: string | null): string {
   if (!id) return 'N/A';
-  if (id.length <= startLen + endLen) return id;
+  if (id.length < 8) return id;
 
-  const firstPart = id.slice(0, startLen);
-  const lastPart = id.slice(-endLen);
-  const middleMask = '*'.repeat(id.length - startLen - endLen);
+  const firstPart = id.slice(0, 4);
+  const lastPart = id.slice(-4);
 
-  return `${firstPart}${middleMask}${lastPart}`;
+  return `${firstPart}****${lastPart}`;
 }
 
 export default function ProfileScreen() {
@@ -160,7 +159,7 @@ export default function ProfileScreen() {
         }}>
           <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary, flexShrink: 1 }}>Update ID</Text>
           <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text, flexShrink: 1 }} numberOfLines={1}>
-            {formatUpdateId(Updates.updateId, 5, 10)}
+            {formatUpdateId(Updates.updateId)}
           </Text>
         </View>
       </Card>

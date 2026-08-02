@@ -15,8 +15,6 @@ import { formatCurrency, formatDate, formatDateTime, formatTime, getInitials } f
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
-// Exact state machine: assigned → heading_to_pickup → arrived → in_progress → completed.
-// Only the immediate next state is offered, so no invalid transitions are possible.
 const NEXT_LABEL: Record<DriverStatus, string | null> = {
   assigned: 'Head to pickup',
   heading_to_pickup: 'Mark arrived',
@@ -57,7 +55,7 @@ export function BookingDetail({
   cancelling: boolean;
 }) {
   const theme = useTheme();
-  const { isLandscape, screenWidth, scale, verticalScale, moderateScale, wp, hp } = useResponsive();
+  const { scale, verticalScale, moderateScale } = useResponsive();
   const next = TRANSITIONS[booking.driver_status] ?? [];
   const missed = isRideMissed(booking);
 
@@ -97,15 +95,16 @@ export function BookingDetail({
 
   return (
     <View style={{ gap: verticalScale(Spacing.three) }}>
+      {/* Fare & Status Card */}
       <Card>
         <View style={{
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: verticalScale(Spacing.three),
+          marginBottom: booking.driver_status !== 'assigned' ? verticalScale(Spacing.three) : 0,
         }}>
           <StatusBadge status={missed ? 'missed' : booking.driver_status} />
-          <Text style={{ fontSize: moderateScale(20), fontWeight: '800', color: theme.text }}>
+          <Text style={{ fontSize: moderateScale(18), fontWeight: '700', color: theme.text }}>
             {formatCurrency(booking.total_fare)}
           </Text>
         </View>
@@ -115,7 +114,7 @@ export function BookingDetail({
             <Point color={theme.brand} shape="dot" label="Pick up" />
             <Line />
             <View style={[{ marginLeft: scale(Spacing.four), flex: 1, minWidth: 0 }]}>
-              <Text style={{ fontSize: moderateScale(16), fontWeight: '600', lineHeight: verticalScale(22), color: theme.text, flexShrink: 1 }} numberOfLines={1}>
+              <Text style={{ fontSize: moderateScale(14), fontWeight: '600', lineHeight: verticalScale(20), color: theme.text, flexShrink: 1 }} numberOfLines={1}>
                 {booking.pickup_location}
               </Text>
             </View>
@@ -123,7 +122,7 @@ export function BookingDetail({
             <Point color={theme.success} shape="square" label="Drop off" />
             <Line />
             <View style={[{ marginLeft: scale(Spacing.four), flex: 1, minWidth: 0 }]}>
-              <Text style={{ fontSize: moderateScale(16), fontWeight: '600', lineHeight: verticalScale(22), color: theme.text, flexShrink: 1 }} numberOfLines={1}>
+              <Text style={{ fontSize: moderateScale(14), fontWeight: '600', lineHeight: verticalScale(20), color: theme.text, flexShrink: 1 }} numberOfLines={1}>
                 {booking.dropoff_location}
               </Text>
             </View>
@@ -131,6 +130,7 @@ export function BookingDetail({
         ) : null}
       </Card>
 
+      {/* Ride Info Rows Card */}
       <Card>
         <Row label="Date" value={formatDate(booking.pickup_date)} icon="calendar-outline" />
         <Row label="Time" value={formatTime(booking.pickup_time)} icon="time-outline" />
@@ -144,17 +144,18 @@ export function BookingDetail({
         ) : null}
       </Card>
 
+      {/* Customer Info Card */}
       <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.three) }}>
           <View style={{
-            width: scale(Spacing.six + Spacing.four),
-            height: scale(Spacing.six + Spacing.four),
-            borderRadius: scale(Spacing.six + Spacing.four),
+            width: scale( spacing(10) ),
+            height: scale( spacing(10) ),
+            borderRadius: scale( spacing(10) ),
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: theme.brandSoft,
           }}>
-            <Text style={{ fontSize: moderateScale(Spacing.three + Spacing.half), fontWeight: '800', color: theme.brand }}>
+            <Text style={{ fontSize: moderateScale(15), fontWeight: '700', color: theme.brand }}>
               {getInitials(
                 booking.customer?.name?.split(' ')[0] ?? '',
                 booking.customer?.name?.split(' ')[1] ?? ''
@@ -162,16 +163,16 @@ export function BookingDetail({
             </Text>
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ fontSize: moderateScale(16), fontWeight: '700', color: theme.text }} numberOfLines={1}>
+            <Text style={{ fontSize: moderateScale(15), fontWeight: '600', color: theme.text }} numberOfLines={1}>
               {booking.customer?.name ?? 'Customer'}
             </Text>
             {booking.customer?.phone ? (
-              <Text style={{ fontSize: moderateScale(13), marginTop: verticalScale(2), color: theme.textSecondary }} numberOfLines={1}>
+              <Text style={{ fontSize: moderateScale(12), marginTop: verticalScale(2), color: theme.textSecondary }} numberOfLines={1}>
                 {booking.customer.phone}
               </Text>
             ) : null}
             {booking.customer?.email ? (
-              <Text style={{ fontSize: moderateScale(13), marginTop: verticalScale(2), color: theme.textSecondary }} numberOfLines={1}>
+              <Text style={{ fontSize: moderateScale(12), marginTop: verticalScale(2), color: theme.textSecondary }} numberOfLines={1}>
                 {booking.customer.email}
               </Text>
             ) : null}
@@ -180,14 +181,14 @@ export function BookingDetail({
             <Pressable
               onPress={() => Linking.openURL(`tel:${booking.customer!.phone}`)}
               style={{
-                width: scale(Spacing.four + Spacing.four),
-                height: scale(Spacing.four + Spacing.four),
-                borderRadius: scale(Spacing.three + Spacing.two - Spacing.half),
+                width: scale(36),
+                height: scale(36),
+                borderRadius: scale(18),
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: theme.brandSoft,
               }}>
-              <Ionicons name="call" size={scale(Spacing.four + Spacing.four)} color={theme.brand} />
+              <Ionicons name="call" size={scale(18)} color={theme.brand} />
             </Pressable>
           ) : null}
         </View>
@@ -196,44 +197,46 @@ export function BookingDetail({
           justifyContent: 'space-between',
           alignItems: 'center',
           marginTop: verticalScale(Spacing.three),
-          paddingTop: verticalScale(Spacing.three),
+          paddingTop: verticalScale(Spacing.two),
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: theme.border,
         }}>
-          <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.textSecondary }}>
+          <Text style={{ fontSize: moderateScale(13), fontWeight: '500', color: theme.textSecondary }}>
             {booking.vehicle_type ?? 'Ride'}
           </Text>
-          <Text numberOfLines={1} style={{ fontSize: moderateScale(Spacing.three + Spacing.half), fontWeight: '800', color: theme.text, flexShrink: 1 }}>
+          <Text numberOfLines={1} style={{ fontSize: moderateScale(15), fontWeight: '700', color: theme.text, flexShrink: 1 }}>
             {formatCurrency(booking.total_fare)}
           </Text>
         </View>
       </Card>
 
+      {/* Notes Card */}
       {booking.notes ? (
         <Card>
-          <Text style={{ fontSize: moderateScale(14), fontWeight: '700', marginBottom: verticalScale(Spacing.two), textTransform: 'uppercase', color: theme.text }}>Notes</Text>
-          <Text style={{ fontSize: moderateScale(14), lineHeight: verticalScale(20), color: theme.textSecondary, flexShrink: 1 }} numberOfLines={2}>{booking.notes}</Text>
+          <Text style={{ fontSize: moderateScale(12), fontWeight: '700', marginBottom: verticalScale(Spacing.one), textTransform: 'uppercase', color: theme.text }}>Notes</Text>
+          <Text style={{ fontSize: moderateScale(13), lineHeight: verticalScale(18), color: theme.textSecondary, flexShrink: 1 }} numberOfLines={2}>{booking.notes}</Text>
         </Card>
       ) : null}
 
+      {/* Actions / Complete Banner */}
       {booking.driver_status === 'completed' ? (
         <Card>
-          <Text style={{ fontSize: moderateScale(Spacing.three + Spacing.half), fontWeight: '700', textAlign: 'center', color: theme.success }}>
-            This ride is completed. 🎉
+          <Text style={{ fontSize: moderateScale(14), fontWeight: '700', textAlign: 'center', color: theme.success }}>
+            This ride is completed.
           </Text>
         </Card>
       ) : (
         <View style={{ gap: verticalScale(Spacing.two) }}>
-{next.map((item, index) => (
-              <Button
-                key={item.value}
-                title={item.label}
-                variant={index === 0 ? 'primary' : 'secondary'}
-                loading={updating}
-                onPress={() => handleStatusPress(item.value)}
-                style={next.length > 1 ? { marginBottom: 0 } : null}
-              />
-            ))}
+          {next.map((item, index) => (
+            <Button
+              key={item.value}
+              title={item.label}
+              variant={index === 0 ? 'primary' : 'secondary'}
+              loading={updating}
+              onPress={() => handleStatusPress(item.value)}
+              style={next.length > 1 ? { marginBottom: 0 } : null}
+            />
+          ))}
 
           {booking.driver_status === 'assigned' && !showCancelConfirm ? (
             <Button
@@ -263,18 +266,18 @@ export function BookingDetail({
                   backgroundColor: theme.surface,
                 }}>
                   <View style={{
-                    width: scale(Spacing.six + Spacing.four),
-                    height: scale(Spacing.six + Spacing.four),
-                    borderRadius: scale(Spacing.six + Spacing.four),
+                    width: scale(40),
+                    height: scale(40),
+                    borderRadius: scale(20),
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: verticalScale(Spacing.one),
                     backgroundColor: theme.dangerSoft,
                   }}>
-                    <Ionicons name="alert-circle-outline" size={scale(Spacing.six + Spacing.four)} color={theme.danger} />
+                    <Ionicons name="alert-circle-outline" size={scale(24)} color={theme.danger} />
                   </View>
-                  <Text style={{ fontSize: moderateScale(18), fontWeight: '800', color: theme.text }}>Cancel this ride?</Text>
-                  <Text style={{ fontSize: moderateScale(14), lineHeight: verticalScale(20), textAlign: 'center', color: theme.textSecondary }}>
+                  <Text style={{ fontSize: moderateScale(16), fontWeight: '700', color: theme.text }}>Cancel this ride?</Text>
+                  <Text style={{ fontSize: moderateScale(13), lineHeight: verticalScale(18), textAlign: 'center', color: theme.textSecondary }}>
                     This action cannot be undone. The customer will be notified.
                   </Text>
                   <TextField
@@ -323,7 +326,7 @@ function Point({ color, shape, label }: { color: string; shape: 'dot' | 'square'
           backgroundColor: color,
         }}
       />
-      <Text style={{ fontSize: moderateScale(Spacing.three), fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, color: theme.textSecondary }}>{label}</Text>
+      <Text style={{ fontSize: moderateScale(11), fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, color: theme.textSecondary }}>{label}</Text>
     </View>
   );
 }
@@ -345,15 +348,18 @@ function Row({ label, value, icon }: { label: string; value: string; icon: Ionic
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.border,
     }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.half + Spacing.one) }}>
-        <Ionicons name={icon} size={scale(Spacing.four)} color={theme.textSecondary} />
-        <Text style={{ fontSize: moderateScale(Spacing.four), fontWeight: '500', color: theme.textSecondary }}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.one) }}>
+        <Ionicons name={icon} size={scale(16)} color={theme.textSecondary} />
+        <Text style={{ fontSize: moderateScale(14), fontWeight: '500', color: theme.textSecondary }}>{label}</Text>
       </View>
-      <Text style={{ fontSize: moderateScale(Spacing.four), fontWeight: '600', flexShrink: 1, textAlign: 'right', marginLeft: scale(Spacing.three), color: theme.text }} numberOfLines={2}>
+      <Text style={{ fontSize: moderateScale(14), fontWeight: '600', flexShrink: 1, textAlign: 'right', marginLeft: scale(Spacing.three), color: theme.text }} numberOfLines={1}>
         {value}
       </Text>
     </View>
   );
 }
 
-
+// Helper inline spacing function for clean avatar dimension calculation
+function spacing(val: number) {
+  return val * 4;
+}
