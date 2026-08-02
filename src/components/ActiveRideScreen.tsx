@@ -15,7 +15,7 @@ import MapViewDirections from 'react-native-maps-directions';
 
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Spacing } from '@/constants/theme';
+import { Spacing, TAB_BAR_BOTTOM_OFFSET, TAB_BAR_HEIGHT } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { type Booking, type DriverStatus } from '@/lib/api';
@@ -541,7 +541,7 @@ export function ActiveRideScreen({
 
       <View style={{
         position: 'absolute',
-        bottom: verticalScale(insets.bottom + Spacing.three),
+        bottom: verticalScale(insets.bottom + TAB_BAR_BOTTOM_OFFSET + TAB_BAR_HEIGHT + Spacing.three),
         left: 0,
         right: 0,
         marginHorizontal: scale(10),

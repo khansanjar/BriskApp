@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RideMap } from '@/components/RideMap';
 import { Avatar } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { DriverStatusMeta, Spacing } from '@/constants/theme';
+import { DriverStatusMeta, Spacing, TAB_BAR_BOTTOM_OFFSET, TAB_BAR_HEIGHT } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { getDashboard, type Booking, type DashboardData, type User } from '@/lib/api';
@@ -212,7 +212,7 @@ export default function DashboardScreen() {
         position: 'absolute',
         left: 0,
         right: 0,
-        bottom: isLandscape ? verticalScale(20) : verticalScale(insets.bottom + Spacing.four),
+        bottom: verticalScale(insets.bottom + TAB_BAR_BOTTOM_OFFSET + TAB_BAR_HEIGHT + Spacing.three),
         marginHorizontal: isLandscape ? scale(Spacing.two) : scale(Spacing.four),
         gap: verticalScale(Spacing.three),
         zIndex: 10,

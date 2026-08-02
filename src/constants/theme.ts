@@ -87,6 +87,8 @@ export const Spacing = {
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+export const TAB_BAR_BOTTOM_OFFSET = 8;
+export const TAB_BAR_HEIGHT = 64;
 export const MaxContentWidth = 800;
 
 export const DriverStatusMeta: Record<

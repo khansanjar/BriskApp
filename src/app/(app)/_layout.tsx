@@ -5,7 +5,7 @@ import * as Notifications from 'expo-notifications';
 import { Tabs, router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
-import { Spacing } from '@/constants/theme';
+import { Spacing, TAB_BAR_BOTTOM_OFFSET, TAB_BAR_HEIGHT } from '@/constants/theme';
 import { registerPushToken } from '@/lib/push';
 import { useThemeMode } from '@/theme/theme-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -87,8 +87,8 @@ export default function AppLayout() {
           left: 0,
           right: 0,
           marginHorizontal: Spacing.four,
-          bottom: insets.bottom + 8,
-          height: 64,
+          bottom: insets.bottom + TAB_BAR_BOTTOM_OFFSET,
+          height: TAB_BAR_HEIGHT,
           borderRadius: 24,
           backgroundColor: colors.tabBarBackground,
           borderTopColor: 'transparent',
