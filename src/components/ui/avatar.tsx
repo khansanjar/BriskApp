@@ -14,7 +14,6 @@ interface AvatarProps {
   /** `initials` (default) shows the name initials; `icon` shows a user silhouette. */
   fallback?: 'initials' | 'icon';
 }
-
 export function Avatar({ firstName, lastName, photo, size = 48, fallback = 'initials' }: AvatarProps) {
   const theme = useTheme();
   const { isLandscape, scale, moderateScale } = useResponsive();

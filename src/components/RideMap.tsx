@@ -2,10 +2,11 @@ import * as Location from 'expo-location';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
-import { useResponsive } from '@/hooks/useResponsive';
 import { useBookingCoordinates } from '@/hooks/use-booking-coordinates';
+import { useResponsive } from '@/hooks/useResponsive';
 import type { Booking } from '@/lib/api';
 import { useThemeMode } from '@/theme/theme-context';
 
@@ -54,7 +55,8 @@ function decodePolyline(encoded: string) {
 
 export function RideMap({ booking }: { booking?: Booking | null }) {
   const { resolvedScheme } = useThemeMode();
-  const { isLandscape, screenWidth, scale, verticalScale, wp, hp } = useResponsive();
+  const { isLandscape, screenWidth, scale, verticalScale, moderateScale, wp, hp } = useResponsive();
+  const insets = useSafeAreaInsets();
   const [driver, setDriver] = useState<{ latitude: number; longitude: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [routeUnavailable, setRouteUnavailable] = useState(false);
@@ -187,8 +189,8 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
 
   if (error) {
     return (
-      <View style={[styles.fallback, { backgroundColor: Colors[resolvedScheme].background }]}>
-        <Text style={[styles.fallbackText, { color: Colors[resolvedScheme].textSecondary }]}>
+      <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', backgroundColor: Colors[resolvedScheme].background, padding: scale(Spacing.four) }]}>
+        <Text style={{ fontSize: moderateScale(14), textAlign: 'center', color: Colors[resolvedScheme].textSecondary, flexShrink: 1 }} numberOfLines={3}>
           {error} Map unavailable.
         </Text>
       </View>
@@ -197,8 +199,8 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
 
   if (!region) {
     return (
-      <View style={styles.fullscreen}>
-        <View style={styles.loadingOverlay}>
+      <View style={{ flex: 1, width: '100%', height: '100%' }}>
+        <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.04)' }]}>
           <ActivityIndicator size="large" color={brand} />
         </View>
       </View>
@@ -206,9 +208,9 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
   }
 
   return (
-    <View style={[styles.fullscreen, isLandscape && styles.fullscreenLandscape]}>
+    <View style={{ flex: 1, width: '100%', height: '100%' }}>
       <MapView
-        style={[styles.map, isLandscape && styles.mapLandscape]}
+        style={{ flex: 1, borderRadius: scale(isLandscape ? Spacing.three : Spacing.four), overflow: 'hidden' }}
         provider={PROVIDER_GOOGLE}
         region={region}
         showsUserLocation={false}
@@ -226,26 +228,37 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
 
         {driver && (
           <Marker coordinate={{ latitude: driver.latitude, longitude: driver.longitude }} title="Your location" description="Current position">
-            <View style={styles.userMarker}>
-              <View style={[styles.userMarkerDot, { backgroundColor: brand }]} />
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: scale(Spacing.three + Spacing.half), height: scale(Spacing.three + Spacing.half), borderRadius: scale(Spacing.three + Spacing.half), borderWidth: scale(Spacing.half + Spacing.one), borderColor: '#ffffff', backgroundColor: brand }} />
             </View>
           </Marker>
         )}
 
         {routeCoords.length > 0 && (
-          <Polyline coordinates={routeCoords} strokeColor={brand} strokeWidth={5} />
+          <Polyline coordinates={routeCoords} strokeColor={brand} strokeWidth={scale(Spacing.half + Spacing.one)} />
         )}
       </MapView>
 
       {!driver ? (
-        <View style={styles.loadingOverlay}>
+        <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.04)' }]}>
           <ActivityIndicator size="large" color={brand} />
         </View>
       ) : null}
 
       {routeUnavailable ? (
-        <View style={[styles.routeBanner, { backgroundColor: Colors[resolvedScheme].surface }]}>
-          <Text style={[styles.routeBannerText, { color: Colors[resolvedScheme].textSecondary }]}>
+        <View style={{
+          position: 'absolute',
+          top: insets.top + scale(Spacing.two + Spacing.half),
+          left: scale(Spacing.two + Spacing.half),
+          right: scale(Spacing.two + Spacing.half),
+          paddingVertical: verticalScale(Spacing.two),
+          paddingHorizontal: scale(Spacing.three),
+          borderRadius: scale(Spacing.two + Spacing.one + Spacing.half),
+          borderWidth: scale(1),
+          borderColor: 'rgba(61, 55, 150, 0.15)',
+          backgroundColor: Colors[resolvedScheme].surface,
+        }}>
+          <Text style={{ fontSize: moderateScale(12), fontWeight: '600', textAlign: 'center', color: Colors[resolvedScheme].textSecondary, flexShrink: 1 }} numberOfLines={2}>
             Route unavailable — showing {isDropoffPhase ? 'dropoff' : 'pickup'} location only
           </Text>
         </View>
@@ -253,20 +266,3 @@ export function RideMap({ booking }: { booking?: Booking | null }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  fullscreen: { flex: 1, width: '100%', height: '100%' },
-  fullscreenLandscape: { flex: 1, width: '100%', height: '100%' },
-  map: { flex: 1, borderRadius: 16, overflow: 'hidden' },
-  mapLandscape: { flex: 1, borderRadius: 12, overflow: 'hidden' },
-  loadingOverlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.04)' },
-  fallback: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: Spacing.four },
-  fallbackText: { fontSize: 14, textAlign: 'center' },
-  routeBanner: {
-    position: 'absolute', top: Spacing.two + Spacing.half, left: Spacing.two + Spacing.half, right: Spacing.two + Spacing.half, paddingVertical: Spacing.two, paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.two + Spacing.one + Spacing.half, borderWidth: 1, borderColor: 'rgba(61, 55, 150, 0.15)',
-  },
-  routeBannerText: { fontSize: 12, fontWeight: '600', textAlign: 'center' },
-  userMarker: { alignItems: 'center', justifyContent: 'center' },
-  userMarkerDot: { width: 20, height: 20, borderRadius: 10, borderWidth: 3, borderColor: '#ffffff' },
-});

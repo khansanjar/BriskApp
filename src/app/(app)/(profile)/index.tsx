@@ -24,7 +24,7 @@ const MODES: { key: ThemeMode; label: string; icon: 'phone-portrait-outline' | '
 ];
 
 // Helper function: Update ID ko mask (hide) karne ke liye
-function formatUpdateId(id?: string | null, startLen = 5, endLen = 5): string {
+function formatUpdateId(id?: string | null, startLen = 3, endLen = 3): string {
   if (!id) return 'N/A';
   if (id.length <= startLen + endLen) return id;
 

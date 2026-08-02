@@ -3,22 +3,22 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
 import {
-    ActivityIndicator,
-    Animated,
-    Modal,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Animated,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RideMap } from '@/components/RideMap';
 import { Avatar } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { BottomTabInset, DriverStatusMeta, Spacing } from '@/constants/theme';
+import { DriverStatusMeta, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { getDashboard, type Booking, type DashboardData, type User } from '@/lib/api';
@@ -212,7 +212,7 @@ export default function DashboardScreen() {
         position: 'absolute',
         left: 0,
         right: 0,
-        bottom: isLandscape ? verticalScale(20) : verticalScale(BottomTabInset + Spacing.four),
+        bottom: isLandscape ? verticalScale(20) : verticalScale(insets.bottom + Spacing.four),
         marginHorizontal: isLandscape ? scale(Spacing.two) : scale(Spacing.four),
         gap: verticalScale(Spacing.three),
         zIndex: 10,
@@ -357,7 +357,7 @@ export default function DashboardScreen() {
                 </View>
               </Pressable>
             </View>
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(Spacing.six + insets.bottom + Spacing.three) }} showsVerticalScrollIndicator={false}>
               {assignedToday.length === 0 ? (
                 <EmptyStateInline compact icon="car-outline" title="No rides" description="No assigned rides scheduled for today." />
               ) : (

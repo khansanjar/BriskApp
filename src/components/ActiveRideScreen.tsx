@@ -9,12 +9,13 @@ import {
   Text,
   View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { BottomTabInset, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { type Booking, type DriverStatus } from '@/lib/api';
@@ -35,6 +36,7 @@ export function ActiveRideScreen({
   onRideComplete,
 }: ActiveRideScreenProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { isLandscape, screenHeight, scale, verticalScale, moderateScale, wp, hp } = useResponsive();
   
   // 1. Local status state for Instant / Smooth UI transition
@@ -523,7 +525,7 @@ export function ActiveRideScreen({
       {locationError && (
         <View style={{
           position: 'absolute',
-          top: scale(16),
+          top: insets.top + scale(16),
           left: scale(16),
           right: scale(16),
           paddingVertical: verticalScale(12),
@@ -539,7 +541,7 @@ export function ActiveRideScreen({
 
       <View style={{
         position: 'absolute',
-        bottom: verticalScale(BottomTabInset + Spacing.three),
+        bottom: verticalScale(insets.bottom + Spacing.three),
         left: 0,
         right: 0,
         marginHorizontal: scale(10),
@@ -556,7 +558,7 @@ export function ActiveRideScreen({
         maxHeight: isLandscape ? hp(45) : hp(60),
       }} pointerEvents="box-none">
         {isLandscape ? (
-          <ScrollView contentContainerStyle={{ gap: verticalScale(Spacing.two) }} showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={{ gap: verticalScale(Spacing.two), paddingBottom: verticalScale(Spacing.six + insets.bottom + Spacing.three) }} showsVerticalScrollIndicator={false}>
             {currentStatus === 'heading_to_pickup' && renderPickupCard()}
             {currentStatus === 'arrived' && renderArrivedCard()}
             {currentStatus === 'in_progress' && renderDestinationCard()}
