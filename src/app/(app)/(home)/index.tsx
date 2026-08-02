@@ -145,8 +145,8 @@ export default function DashboardScreen() {
   return (
     <View style={{ flex: 1 }}>
       {/* Full-screen map background */}
-      <View style={{ ...StyleSheet.absoluteFillObject }}>
-        <RideMap booking={featured} />
+<View style={StyleSheet.absoluteFill}>
+          <RideMap booking={featured} />
       </View>
 
       {/* Fixed top header */}
@@ -332,7 +332,7 @@ export default function DashboardScreen() {
         <View style={{
           flex: 1,
           backgroundColor: 'rgba(21, 19, 43, 0.55)',
-          justify: 'flex-end',
+          justifyContent: 'flex-end',
         }}>
           <View style={{
             borderTopLeftRadius: moderateScale(24),
