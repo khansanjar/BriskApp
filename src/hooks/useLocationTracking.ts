@@ -18,11 +18,17 @@ try {
 const LOCATION_TASK_NAME = 'background-location-tracking';
 const QUEUE_KEY = '@pending_location_queue';
 const LOCATION_QUEUE_MAX = 500;
+const UPLOAD_INTERVAL_MS = 25000; // 25 seconds throttle
 
 // Cached region string from driver's current location
 let cachedRegion: string | null = null;
 let regionCacheTimestamp: number = 0;
 const REGION_CACHE_DURATION = 5 * 60 * 1000;
+
+// Background task state for throttling
+let lastUploadTime: number = 0;
+let currentBookingId: number | null = null;
+let locationBuffer: QueuedLocation[] = [];
 
 type QueuedLocation = {
   lat: number;
@@ -231,11 +237,12 @@ async function flushPendingLocations(bookingId: number): Promise<void> {
 /**
  * Background task that receives location updates from the OS even when
  * the app is in the background or killed.
- * Writes each coordinate directly to persistent AsyncStorage.
+ * Directly uploads to API with 25-second throttling.
+ * Falls back to AsyncStorage if network fails.
  */
 TaskManager?.defineTask?.(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error) {
-    console.warn('Background location task error:', error);
+    console.warn('[BackgroundLocationTask] Error:', error);
     return;
   }
 
@@ -244,6 +251,9 @@ TaskManager?.defineTask?.(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (!locations || !Array.isArray(locations)) {
     return;
   }
+
+  const now = Date.now();
+  const shouldUpload = (now - lastUploadTime) >= UPLOAD_INTERVAL_MS;
 
   for (const loc of locations) {
     if (loc.coords.latitude === 0 && loc.coords.longitude === 0) continue;
@@ -256,12 +266,48 @@ TaskManager?.defineTask?.(LOCATION_TASK_NAME, async ({ data, error }) => {
       speed: loc.coords.speed ?? undefined,
     };
 
-    console.log('[LocationTracking] Background location update received:', JSON.stringify(point));
+    console.log('[BackgroundLocationTask] Location received:', JSON.stringify(point));
+    
+    // Add to buffer
+    locationBuffer.push(point);
+  }
 
+  // Throttled upload every 25 seconds
+  if (shouldUpload && locationBuffer.length > 0 && currentBookingId != null) {
+    lastUploadTime = now;
+    
     try {
-      await saveLocationOffline(point);
-    } catch (saveErr) {
-      console.warn('Failed to save background location to queue:', saveErr);
+      // Check network connectivity
+      const net = await NetInfo.fetch();
+      
+      if (net.isConnected) {
+        // Direct API upload from background task
+        console.log('[BackgroundLocationTask] Uploading batch:', JSON.stringify({ 
+          bookingId: currentBookingId, 
+          count: locationBuffer.length 
+        }));
+        
+        await postLocationBatch(currentBookingId, [...locationBuffer]);
+        console.log('[BackgroundLocationTask] Upload successful');
+        
+        // Clear buffer on success
+        locationBuffer = [];
+      } else {
+        // Network unavailable - save to offline queue
+        console.log('[BackgroundLocationTask] Network unavailable, saving to offline queue');
+        for (const point of locationBuffer) {
+          await saveLocationOffline(point);
+        }
+        locationBuffer = [];
+      }
+    } catch (uploadError) {
+      console.warn('[BackgroundLocationTask] Upload failed, saving to offline queue:', uploadError);
+      
+      // Save failed locations to offline queue
+      for (const point of locationBuffer) {
+        await saveLocationOffline(point);
+      }
+      locationBuffer = [];
     }
   }
 });
@@ -269,10 +315,10 @@ TaskManager?.defineTask?.(LOCATION_TASK_NAME, async ({ data, error }) => {
 /**
  * Hook that manages persistent location tracking for an active ride.
  * Uses AsyncStorage-backed queue and expo-task-manager background updates.
- * Automatically resumes tracking when app returns to foreground after permission grant.
+ * Directly uploads to API from background task with 25-second throttling.
+ * Automatically flushes offline queue when app returns to foreground.
  */
 export function useLocationTracking(bookingId: number | null, status: DriverStatus | null) {
-  const flushIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasStartedRef = useRef(false);
   const appStateRef = useRef(AppState.currentState);
   const [isTracking, setIsTracking] = useState(false);
@@ -282,18 +328,17 @@ export function useLocationTracking(bookingId: number | null, status: DriverStat
     bookingId != null &&
     (status === 'heading_to_pickup' || status === 'in_progress' || status === 'arrived');
 
-  // Helper 1: Clears existing timer, resets tracking flags, and stops background service
+  // Helper 1: Clears existing state, resets tracking flags, and stops background service
   const stopTracking = async () => {
-    if (flushIntervalRef.current) {
-      clearInterval(flushIntervalRef.current);
-      flushIntervalRef.current = null;
-    }
     hasStartedRef.current = false;
     setIsTracking(false);
+    currentBookingId = null;
+    locationBuffer = [];
+    lastUploadTime = 0;
     await stopBackgroundLocationTracking();
   };
 
-  // Helper 2: Centralized function to request permissions, start background task & set interval
+  // Helper 2: Centralized function to request permissions, start background task
   const startTracking = async (targetBookingId: number) => {
     if (hasStartedRef.current) return;
     hasStartedRef.current = true;
@@ -307,8 +352,13 @@ export function useLocationTracking(bookingId: number | null, status: DriverStat
 
       const taskManagerAvailable = TaskManager ? await TaskManager.isAvailableAsync() : false;
       if (!taskManagerAvailable) {
-        console.warn('TaskManager not available — background tracking will not start');
+        console.warn('[LocationTracking] TaskManager not available — background tracking will not start');
       }
+
+      // Set global booking ID for background task
+      currentBookingId = targetBookingId;
+      locationBuffer = [];
+      lastUploadTime = 0;
 
       await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
         accuracy: Location.Accuracy.High,
@@ -320,37 +370,29 @@ export function useLocationTracking(bookingId: number | null, status: DriverStat
         },
       });
 
-      // Clear any existing interval before creating a new one to prevent leaks
-      if (flushIntervalRef.current) {
-        clearInterval(flushIntervalRef.current);
-      }
-
-      flushIntervalRef.current = setInterval(() => {
-        flushPendingLocations(targetBookingId);
-      }, 25000); // 25 seconds interval
-
       setIsTracking(true);
       setError(null);
     } catch (startErr) {
-      console.warn('startLocationUpdatesAsync failed:', startErr);
+      console.warn('[LocationTracking] startLocationUpdatesAsync failed:', startErr);
       await stopTracking();
       setError('Location tracking unavailable. Check your device GPS settings.');
     }
   };
 
-  // AppState listener: auto-resume tracking when app returns to foreground
+  // AppState listener: flush offline queue when app returns to foreground
   useEffect(() => {
     const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
-      if (nextAppState !== 'active') {
-        appStateRef.current = nextAppState;
-        return;
-      }
-
       appStateRef.current = nextAppState;
 
-      // If ride is active but tracking hasn't started yet, attempt start
-      if (isActive && bookingId != null && !hasStartedRef.current) {
-        await startTracking(bookingId);
+      // When app becomes active, flush any pending offline locations
+      if (nextAppState === 'active' && bookingId != null) {
+        console.log('[LocationTracking] App became active, flushing offline queue');
+        await flushPendingLocations(bookingId);
+        
+        // If ride is active but tracking hasn't started yet, attempt start
+        if (isActive && !hasStartedRef.current) {
+          await startTracking(bookingId);
+        }
       }
     });
 
@@ -383,9 +425,11 @@ export function useLocationTracking(bookingId: number | null, status: DriverStat
   return { isTracking, error, openAppSettings };
 }
 
-//  Stops background location updates for the current ride.
-//   Call this when the ride is completed or cancelled.
- 
+/**
+ * Stops background location updates for the current ride.
+ * Call this when the ride is completed or cancelled.
+ * Also clears global state variables.
+ */
 export async function stopBackgroundLocationTracking(): Promise<void> {
   try {
     if (TaskManager) {
@@ -396,8 +440,13 @@ export async function stopBackgroundLocationTracking(): Promise<void> {
         console.log('[LocationTracking] Background location updates stopped successfully.');
       }
     }
+    
+    // Clear global state
+    currentBookingId = null;
+    locationBuffer = [];
+    lastUploadTime = 0;
   } catch (error) {
-    console.warn('Failed to stop background location tracking:', error);
+    console.warn('[LocationTracking] Failed to stop background location tracking:', error);
   }
 }
 

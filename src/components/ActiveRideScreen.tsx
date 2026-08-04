@@ -3,22 +3,24 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
+    Alert,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Spacing, TAB_BAR_BOTTOM_OFFSET, TAB_BAR_HEIGHT, ScreenHorizontalMargin } from '@/constants/theme';
+import { ScreenHorizontalMargin, Spacing, TAB_BAR_BOTTOM_OFFSET, TAB_BAR_HEIGHT } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { type Booking, type DriverStatus } from '@/lib/api';
+import { openNavigationForRide } from '@/lib/navigation';
 
 export interface ActiveRideScreenProps {
   booking: Booking;
@@ -267,6 +269,27 @@ export function ActiveRideScreen({
     return `${mins} min`;
   };
 
+  // Navigation handler
+  const handleNavigationPress = useCallback(async () => {
+    const destination = currentStatus === 'heading_to_pickup' || currentStatus === 'arrived'
+      ? pickupLocation
+      : dropoffLocation;
+
+    const success = await openNavigationForRide(
+      currentStatus,
+      { latitude: pickupLocation.latitude, longitude: pickupLocation.longitude, address: pickupLocation.address },
+      { latitude: dropoffLocation.latitude, longitude: dropoffLocation.longitude, address: dropoffLocation.address }
+    );
+
+    if (!success) {
+      Alert.alert(
+        'Navigation Error',
+        'Unable to open Google Maps. Please ensure it is installed or try again.',
+        [{ text: 'OK', style: 'default' }]
+      );
+    }
+  }, [currentStatus, pickupLocation, dropoffLocation]);
+
   const renderPickupCard = () => (
     <>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
@@ -306,13 +329,40 @@ export function ActiveRideScreen({
         </View>
       )}
 
-      <Button
-        title={isArriving ? "Arriving..." : "Mark as Arrived"}
-        loading={isArriving}
-        disabled={isArriving}
-        onPress={() => confirmAndTransition('arrived')}
-        style={{ marginTop: verticalScale(Spacing.two) }}
-      />
+      <View style={{ flexDirection: 'row', gap: scale(Spacing.two), marginTop: verticalScale(Spacing.two) }}>
+        <Pressable
+          onPress={handleNavigationPress}
+          style={({ pressed }: { pressed: boolean }) => ({
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: scale(Spacing.one),
+            paddingVertical: verticalScale(Spacing.two),
+            paddingHorizontal: scale(Spacing.three),
+            borderRadius: moderateScale(12),
+            backgroundColor: pressed ? theme.brandSoft : theme.brand,
+            opacity: pressed ? 0.8 : 1,
+          })}
+        >
+          <Ionicons name="navigate" size={scale(20)} color={theme.brandText} />
+          <Text style={{ 
+            fontSize: moderateScale(14), 
+            fontWeight: '700', 
+            color: theme.brandText 
+          }}>
+            Navigate
+          </Text>
+        </Pressable>
+        
+        <Button
+          title={isArriving ? "Arriving..." : "Mark as Arrived"}
+          loading={isArriving}
+          disabled={isArriving}
+          onPress={() => confirmAndTransition('arrived')}
+          style={{ flex: 1 }}
+        />
+      </View>
     </>
   );
 
@@ -364,13 +414,40 @@ export function ActiveRideScreen({
         </View>
       </View>
 
-      <Button
-        title={isStarting ? "Starting Ride..." : "Start Ride"}
-        loading={isStarting}
-        disabled={isStarting}
-        onPress={() => confirmAndTransition('in_progress')}
-        style={{ marginTop: verticalScale(Spacing.two) }}
-      />
+      <View style={{ flexDirection: 'row', gap: scale(Spacing.two), marginTop: verticalScale(Spacing.two) }}>
+        <Pressable
+          onPress={handleNavigationPress}
+          style={({ pressed }: { pressed: boolean }) => ({
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: scale(Spacing.one),
+            paddingVertical: verticalScale(Spacing.two),
+            paddingHorizontal: scale(Spacing.three),
+            borderRadius: moderateScale(12),
+            backgroundColor: pressed ? theme.brandSoft : theme.brand,
+            opacity: pressed ? 0.8 : 1,
+          })}
+        >
+          <Ionicons name="navigate" size={scale(20)} color={theme.brandText} />
+          <Text style={{ 
+            fontSize: moderateScale(14), 
+            fontWeight: '700', 
+            color: theme.brandText 
+          }}>
+            Navigate
+          </Text>
+        </Pressable>
+        
+        <Button
+          title={isStarting ? "Starting Ride..." : "Start Ride"}
+          loading={isStarting}
+          disabled={isStarting}
+          onPress={() => confirmAndTransition('in_progress')}
+          style={{ flex: 1 }}
+        />
+      </View>
     </>
   );
 
@@ -413,13 +490,40 @@ export function ActiveRideScreen({
         </View>
       )}
 
-      <Button
-        title={isCompleting ? "Completing Ride..." : "Complete Ride"}
-        loading={isCompleting}
-        disabled={isCompleting}
-        onPress={() => confirmAndTransition('completed')}
-        style={{ marginTop: verticalScale(Spacing.two) }}
-/>
+      <View style={{ flexDirection: 'row', gap: scale(Spacing.two), marginTop: verticalScale(Spacing.two) }}>
+        <Pressable
+          onPress={handleNavigationPress}
+          style={({ pressed }: { pressed: boolean }) => ({
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: scale(Spacing.one),
+            paddingVertical: verticalScale(Spacing.two),
+            paddingHorizontal: scale(Spacing.three),
+            borderRadius: moderateScale(12),
+            backgroundColor: pressed ? theme.brandSoft : theme.brand,
+            opacity: pressed ? 0.8 : 1,
+          })}
+        >
+          <Ionicons name="navigate" size={scale(20)} color={theme.brandText} />
+          <Text style={{ 
+            fontSize: moderateScale(14), 
+            fontWeight: '700', 
+            color: theme.brandText 
+          }}>
+            Navigate
+          </Text>
+        </Pressable>
+        
+        <Button
+          title={isCompleting ? "Completing Ride..." : "Complete Ride"}
+          loading={isCompleting}
+          disabled={isCompleting}
+          onPress={() => confirmAndTransition('completed')}
+          style={{ flex: 1 }}
+        />
+      </View>
      </>
   );
 
