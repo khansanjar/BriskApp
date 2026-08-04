@@ -43,7 +43,11 @@ export function useBookingDetail(id: number) {
       setUpdating(true);
       setError(null);
       try {
-        await updateBookingStatus(id, { status });
+        const minDelay = new Promise<void>((resolve) => setTimeout(resolve, 1500));
+        await Promise.all([
+          updateBookingStatus(id, { status }),
+          minDelay
+        ]);
         await load();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not update status.');

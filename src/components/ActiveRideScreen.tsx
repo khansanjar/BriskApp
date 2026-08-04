@@ -182,7 +182,11 @@ export function ActiveRideScreen({
     hasFittedMapRef.current = null;
 
     try {
-      await onStatusChange(nextStatus);
+      const minDelay = new Promise<void>((resolve) => setTimeout(resolve, 1500));
+      await Promise.all([
+        onStatusChange(nextStatus),
+        minDelay
+      ]);
       if (nextStatus === 'completed') {
         onRideComplete?.();
       }
@@ -332,6 +336,7 @@ export function ActiveRideScreen({
       <View style={{ flexDirection: 'row', gap: scale(Spacing.two), marginTop: verticalScale(Spacing.two) }}>
         <Pressable
           onPress={handleNavigationPress}
+          disabled={isArriving || isStarting || isCompleting}
           style={({ pressed }: { pressed: boolean }) => ({
             flex: 1,
             flexDirection: 'row',
@@ -342,7 +347,7 @@ export function ActiveRideScreen({
             paddingHorizontal: scale(Spacing.three),
             borderRadius: moderateScale(12),
             backgroundColor: pressed ? theme.brandSoft : theme.brand,
-            opacity: pressed ? 0.8 : 1,
+            opacity: (isArriving || isStarting || isCompleting) ? 0.5 : (pressed ? 0.8 : 1),
           })}
         >
           <Ionicons name="navigate" size={scale(20)} color={theme.brandText} />
@@ -358,7 +363,7 @@ export function ActiveRideScreen({
         <Button
           title={isArriving ? "Arriving..." : "Mark as Arrived"}
           loading={isArriving}
-          disabled={isArriving}
+          disabled={isArriving || isStarting || isCompleting}
           onPress={() => confirmAndTransition('arrived')}
           style={{ flex: 1 }}
         />
@@ -417,6 +422,7 @@ export function ActiveRideScreen({
       <View style={{ flexDirection: 'row', gap: scale(Spacing.two), marginTop: verticalScale(Spacing.two) }}>
         <Pressable
           onPress={handleNavigationPress}
+          disabled={isArriving || isStarting || isCompleting}
           style={({ pressed }: { pressed: boolean }) => ({
             flex: 1,
             flexDirection: 'row',
@@ -427,7 +433,7 @@ export function ActiveRideScreen({
             paddingHorizontal: scale(Spacing.three),
             borderRadius: moderateScale(12),
             backgroundColor: pressed ? theme.brandSoft : theme.brand,
-            opacity: pressed ? 0.8 : 1,
+            opacity: (isArriving || isStarting || isCompleting) ? 0.5 : (pressed ? 0.8 : 1),
           })}
         >
           <Ionicons name="navigate" size={scale(20)} color={theme.brandText} />
@@ -443,7 +449,7 @@ export function ActiveRideScreen({
         <Button
           title={isStarting ? "Starting Ride..." : "Start Ride"}
           loading={isStarting}
-          disabled={isStarting}
+          disabled={isStarting || isArriving || isCompleting}
           onPress={() => confirmAndTransition('in_progress')}
           style={{ flex: 1 }}
         />
@@ -493,6 +499,7 @@ export function ActiveRideScreen({
       <View style={{ flexDirection: 'row', gap: scale(Spacing.two), marginTop: verticalScale(Spacing.two) }}>
         <Pressable
           onPress={handleNavigationPress}
+          disabled={isArriving || isStarting || isCompleting}
           style={({ pressed }: { pressed: boolean }) => ({
             flex: 1,
             flexDirection: 'row',
@@ -503,7 +510,7 @@ export function ActiveRideScreen({
             paddingHorizontal: scale(Spacing.three),
             borderRadius: moderateScale(12),
             backgroundColor: pressed ? theme.brandSoft : theme.brand,
-            opacity: pressed ? 0.8 : 1,
+            opacity: (isArriving || isStarting || isCompleting) ? 0.5 : (pressed ? 0.8 : 1),
           })}
         >
           <Ionicons name="navigate" size={scale(20)} color={theme.brandText} />
@@ -519,7 +526,7 @@ export function ActiveRideScreen({
         <Button
           title={isCompleting ? "Completing Ride..." : "Complete Ride"}
           loading={isCompleting}
-          disabled={isCompleting}
+          disabled={isCompleting || isArriving || isStarting}
           onPress={() => confirmAndTransition('completed')}
           style={{ flex: 1 }}
         />
