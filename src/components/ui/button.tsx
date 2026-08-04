@@ -52,8 +52,11 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
         style,
       ]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: scale(Spacing.two) }}>
-        <Text style={{ fontSize: moderateScale(16), fontWeight: '700', color: textColor }}>{title}</Text>
-        {loading && <ActivityIndicator color={textColor} style={{ marginLeft: scale(Spacing.two) }} />}
+        {loading ? (
+          <ActivityIndicator color={textColor} size="small" />
+        ) : (
+          <Text style={{ fontSize: moderateScale(16), fontWeight: '700', color: textColor }}>{title}</Text>
+        )}
       </View>
     </Pressable>
   );
