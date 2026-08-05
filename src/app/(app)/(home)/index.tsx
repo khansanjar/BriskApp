@@ -289,7 +289,7 @@ export default function DashboardScreen() {
               <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Today&apos;s earnings</Text>
               <Animated.View style={{ opacity: earningsOpacity }}>
                 <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }} numberOfLines={1} adjustsFontSizeToFit>
-                  {hideEarnings ? '••••••' : (data ? formatCurrency(dayEarnings?.amount ?? 0) : '—')}
+                  {hideEarnings ? '******' : (data ? formatCurrency(dayEarnings?.amount ?? 0) : '—')}
                 </Text>
               </Animated.View>
             </View>
@@ -301,7 +301,7 @@ export default function DashboardScreen() {
               <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Rides today</Text>
               <Animated.View style={{ opacity: earningsOpacity }}>
                 <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }}>
-                  {hideEarnings ? '••' : (data ? dayEarnings?.rides_count ?? 0 : '—')}
+                  {hideEarnings ? '**' : (data ? dayEarnings?.rides_count ?? 0 : '—')}
                 </Text>
               </Animated.View>
             </View>

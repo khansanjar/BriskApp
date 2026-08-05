@@ -34,6 +34,7 @@ export default function RegisterScreen() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   function update(key: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -164,11 +165,23 @@ export default function RegisterScreen() {
           <TextField
             label="Password"
             placeholder="At least 8 characters"
-            secureTextEntry
+            secureTextEntry={!showPassword}
             value={form.password}
             onChangeText={(v) => update('password', v)}
             error={errors.password}
           />
+          <Pressable onPress={() => setShowPassword((s) => !s)} style={{
+            alignSelf: 'flex-end',
+            paddingVertical: verticalScale(Spacing.two),
+          }}>
+            <Text style={{
+              fontSize: moderateScale(13),
+              fontWeight: '700',
+              color: theme.brand,
+            }}>
+              {showPassword ? 'Hide' : 'Show'}
+            </Text>
+          </Pressable>
         </View>
 
         <View style={{ marginTop: verticalScale(Spacing.four) }}>
