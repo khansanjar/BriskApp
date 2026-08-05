@@ -426,3 +426,58 @@ export async function updateProfile(payload: {
     body: payload,
   });
 }
+
+/* ------------------------------------------------------------------ */
+/* Earnings                                                            */
+/* ------------------------------------------------------------------ */
+
+export type EarningsPeriod = 'daily' | 'weekly' | 'monthly';
+
+export interface EarningsBreakdown {
+  date: string;
+  amount: number;
+  rides_count: number;
+}
+
+export interface EarningsRide {
+  booking_id: number;
+  order_id: string;
+  pickup_location: string;
+  dropoff_location: string;
+  pickup_date: string;
+  pickup_time: string;
+  completed_at: string;
+  total_fare: number;
+  customer?: Customer;
+}
+
+export interface EarningsResponse {
+  period: EarningsPeriod;
+  date: string;
+  summary: {
+    total_earnings: number;
+    total_rides: number;
+  };
+  breakdown: EarningsBreakdown[];
+  rides: EarningsRide[];
+  pagination: {
+    current_page: number;
+    total: number;
+    last_page: number;
+  };
+}
+
+export async function getDriverEarningsReport(
+  period: EarningsPeriod,
+  date: string,
+  page: number = 1,
+  limit: number = 10
+): Promise<EarningsResponse> {
+  const search = new URLSearchParams();
+  search.set('period', period);
+  search.set('date', date);
+  search.set('page', String(page));
+  search.set('limit', String(limit));
+  const query = search.toString();
+  return request<EarningsResponse>(`/earnings${query ? `?${query}` : ''}`);
+}

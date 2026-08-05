@@ -1,6 +1,7 @@
 // src/app/(app)/(profile)/index.tsx
 import Ionicons from '@react-native-vector-icons/ionicons';
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
 import * as Updates from 'expo-updates';
 import { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
@@ -206,6 +207,42 @@ export default function ProfileScreen() {
             );
           })}
         </View>
+      </Card>
+
+      <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
+        <Pressable
+          onPress={() => router.push('/(app)/earnings')}
+          style={({ pressed }) => [
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingVertical: verticalScale(Spacing.two),
+            },
+            pressed && { opacity: 0.7 },
+          ]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.three) }}>
+            <View style={{
+              width: scale(36),
+              height: scale(36),
+              borderRadius: moderateScale(10),
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: theme.brandSoft,
+            }}>
+              <Ionicons name="cash-outline" size={scale(20)} color={theme.brand} />
+            </View>
+            <View>
+              <Text style={{ fontSize: moderateScale(15), fontWeight: '700', color: theme.text }}>
+                Earnings & Reports
+              </Text>
+              <Text style={{ fontSize: moderateScale(13), color: theme.textSecondary }}>
+                View daily, weekly & monthly payout details
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={scale(20)} color={theme.textSecondary} />
+        </Pressable>
       </Card>
 
       <Pressable
