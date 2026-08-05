@@ -229,7 +229,7 @@ export default function DashboardScreen() {
                 paddingVertical: verticalScale(Spacing.two),
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: scale(6) },
-                shadowOpacity: 0.15,
+                shadowOpacity: 0.16,
                 shadowRadius: scale(10),
                 elevation: 6,
                 backgroundColor: theme.surface,
