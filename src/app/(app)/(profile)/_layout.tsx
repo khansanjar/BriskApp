@@ -18,6 +18,13 @@ export default function ProfileLayout() {
           contentStyle: { backgroundColor: theme.background },
         }}
       />
+      <Stack.Screen
+        name="earnings"
+        options={{
+          headerShown: false,
+          contentStyle: { backgroundColor: theme.background },
+        }}
+      />
     </Stack>
   );
 }

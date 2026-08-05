@@ -140,6 +140,40 @@ export default function ProfileScreen() {
       </Card>
 
       <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
+        <Pressable
+          onPress={() => router.push('/(app)/(profile)/earnings')}
+          style={({ pressed }) => [
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: verticalScale(Spacing.two),
+            },
+            pressed && { opacity: 0.7 },
+          ]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.three) }}>
+            <View style={{
+              width: scale(36),
+              height: scale(36),
+              borderRadius: moderateScale(10),
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: theme.brandSoft,
+            }}>
+              <Ionicons name="cash-outline" size={scale(20)} color={theme.brand} />
+            </View>
+            <View>
+              <Text style={{ fontSize: moderateScale(15), fontWeight: '700', color: theme.text }}>
+                Earnings & Reports
+              </Text>
+              <Text style={{ fontSize: moderateScale(13), color: theme.textSecondary }}>
+                View daily, weekly & monthly payout details
+              </Text>
+            </View>
+          </View>
+        </Pressable>
+      </Card>
+
+      <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
         <Text style={{ fontSize: moderateScale(15), fontWeight: '700', marginBottom: verticalScale(Spacing.three), color: theme.text }}>App Info</Text>
         <View style={{
           flexDirection: 'row',
@@ -207,42 +241,6 @@ export default function ProfileScreen() {
             );
           })}
         </View>
-      </Card>
-
-      <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
-        <Pressable
-          onPress={() => router.push('/(app)/earnings')}
-          style={({ pressed }) => [
-            {
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingVertical: verticalScale(Spacing.two),
-            },
-            pressed && { opacity: 0.7 },
-          ]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.three) }}>
-            <View style={{
-              width: scale(36),
-              height: scale(36),
-              borderRadius: moderateScale(10),
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: theme.brandSoft,
-            }}>
-              <Ionicons name="cash-outline" size={scale(20)} color={theme.brand} />
-            </View>
-            <View>
-              <Text style={{ fontSize: moderateScale(15), fontWeight: '700', color: theme.text }}>
-                Earnings & Reports
-              </Text>
-              <Text style={{ fontSize: moderateScale(13), color: theme.textSecondary }}>
-                View daily, weekly & monthly payout details
-              </Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={scale(20)} color={theme.textSecondary} />
-        </Pressable>
       </Card>
 
       <Pressable

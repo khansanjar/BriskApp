@@ -1,4 +1,4 @@
-// src/app/(app)/earnings.tsx
+// src/app/(app)/(profile)/earnings.tsx
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
