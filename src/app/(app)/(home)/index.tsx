@@ -72,8 +72,10 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAllRides, setShowAllRides] = useState(false);
+  const [hideEarnings, setHideEarnings] = useState(false);
 
   const blinkAnim = useRef(new Animated.Value(1)).current;
+  const [earningsOpacity] = useState(() => new Animated.Value(1));
 
   const load = useCallback(async () => {
     try {
@@ -139,6 +141,16 @@ export default function DashboardScreen() {
     await load();
     setRefreshing(false);
   }, [load]);
+
+  const toggleHideEarnings = useCallback(() => {
+    const toValue = hideEarnings ? 1 : 0;
+    Animated.timing(earningsOpacity, {
+      toValue,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+    setHideEarnings((prev) => !prev);
+  }, [hideEarnings, earningsOpacity]);
 
   const openBooking = (id: number) => router.push(`/(app)/(home)/booking/${id}`);
 
@@ -267,12 +279,19 @@ export default function DashboardScreen() {
             shadowRadius: scale(10),
             elevation: 6,
             backgroundColor: theme.brand,
+            position: 'relative',
           }}>
+            <Pressable onPress={toggleHideEarnings} hitSlop={8} style={{ position: 'absolute', top: verticalScale(Spacing.one), right: scale(Spacing.two), zIndex: 1 }}>
+              <Ionicons name={hideEarnings ? 'eye-off-outline' : 'eye-outline'} size={scale(20)} color={theme.brandText} />
+            </Pressable>
+
             <View style={{ flex: 1, gap: verticalScale(2) }}>
               <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Today&apos;s earnings</Text>
-              <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }} numberOfLines={1} adjustsFontSizeToFit>
-                {data ? formatCurrency(dayEarnings?.amount ?? 0) : '—'}
-              </Text>
+              <Animated.View style={{ opacity: earningsOpacity }}>
+                <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }} numberOfLines={1} adjustsFontSizeToFit>
+                  {hideEarnings ? '••••••' : (data ? formatCurrency(dayEarnings?.amount ?? 0) : '—')}
+                </Text>
+              </Animated.View>
             </View>
 
             {/* Fixed line divider */}
@@ -280,9 +299,11 @@ export default function DashboardScreen() {
 
             <View style={{ flex: 1, gap: verticalScale(2) }}>
               <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Rides today</Text>
-              <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }}>
-                {data ? dayEarnings?.rides_count ?? 0 : '—'}
-              </Text>
+              <Animated.View style={{ opacity: earningsOpacity }}>
+                <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }}>
+                  {hideEarnings ? '••' : (data ? dayEarnings?.rides_count ?? 0 : '—')}
+                </Text>
+              </Animated.View>
             </View>
           </View>
 
