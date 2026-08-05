@@ -75,7 +75,6 @@ export default function DashboardScreen() {
   const [hideEarnings, setHideEarnings] = useState(false);
 
   const blinkAnim = useRef(new Animated.Value(1)).current;
-  const [earningsOpacity] = useState(() => new Animated.Value(1));
 
   const load = useCallback(async () => {
     try {
@@ -143,14 +142,8 @@ export default function DashboardScreen() {
   }, [load]);
 
   const toggleHideEarnings = useCallback(() => {
-    const toValue = hideEarnings ? 1 : 0;
-    Animated.timing(earningsOpacity, {
-      toValue,
-      duration: 220,
-      useNativeDriver: true,
-    }).start();
     setHideEarnings((prev) => !prev);
-  }, [hideEarnings, earningsOpacity]);
+  }, []);
 
   const openBooking = (id: number) => router.push(`/(app)/(home)/booking/${id}`);
 
@@ -287,11 +280,9 @@ export default function DashboardScreen() {
 
             <View style={{ flex: 1, gap: verticalScale(2) }}>
               <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Today&apos;s earnings</Text>
-              <Animated.View style={{ opacity: earningsOpacity }}>
-                <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }} numberOfLines={1} adjustsFontSizeToFit>
-                  {hideEarnings ? '******' : (data ? formatCurrency(dayEarnings?.amount ?? 0) : '—')}
-                </Text>
-              </Animated.View>
+              <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }} numberOfLines={1} adjustsFontSizeToFit>
+                {hideEarnings ? '******' : (data ? formatCurrency(dayEarnings?.amount ?? 0) : '—')}
+              </Text>
             </View>
 
             {/* Fixed line divider */}
@@ -299,11 +290,9 @@ export default function DashboardScreen() {
 
             <View style={{ flex: 1, gap: verticalScale(2) }}>
               <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Rides today</Text>
-              <Animated.View style={{ opacity: earningsOpacity }}>
-                <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }}>
-                  {hideEarnings ? '**' : (data ? dayEarnings?.rides_count ?? 0 : '—')}
-                </Text>
-              </Animated.View>
+              <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }}>
+                {hideEarnings ? '**' : (data ? dayEarnings?.rides_count ?? 0 : '—')}
+              </Text>
             </View>
           </View>
 
