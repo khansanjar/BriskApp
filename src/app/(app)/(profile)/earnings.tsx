@@ -12,13 +12,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withDelay,
-  Easing,
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/ui/card';
@@ -51,41 +44,71 @@ const PERIODS: { key: 'daily' | 'weekly' | 'monthly'; label: string }[] = [
   { key: 'monthly', label: 'Monthly' },
 ];
 
-function AnimatedBar({ height, hasEarnings, theme, scale, verticalScale, moderateScale, delayMs }: {
-  height: number;
-  hasEarnings: boolean;
+function BreakdownLine({ item, maxAmount, theme, scale, verticalScale, moderateScale }: {
+  item: { date: string; amount: number; rides_count: number };
+  maxAmount: number;
   theme: ReturnType<typeof useTheme>;
   scale: (n: number) => number;
   verticalScale: (n: number) => number;
   moderateScale: (n: number) => number;
-  delayMs: number;
 }) {
-  const sv = useSharedValue(0);
-  const animatedStyle = useAnimatedStyle(() => ({
-    height: withDelay(delayMs, withTiming(sv.value, {
-      duration: 600,
-      easing: Easing.out(Easing.cubic),
-    })),
-  }));
+  const hasEarnings = item.amount > 0;
+  const ratio = maxAmount > 0 ? item.amount / maxAmount : 0;
+  const progressWidth = hasEarnings ? scale(60) + (scale(120) * ratio) : scale(60);
+
+  const dateObj = new Date(item.date);
+  const dayName = Number.isNaN(dateObj.getTime()) ? '' : new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(dateObj);
+  const dateLabel = Number.isNaN(dateObj.getTime()) ? item.date : new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(dateObj);
 
   return (
-    <Animated.View style={[
-      {
-        width: scale(12),
-        backgroundColor: hasEarnings ? theme.brand : theme.backgroundElement,
-        borderRadius: moderateScale(6),
-        opacity: hasEarnings ? 1 : 0.3,
-        alignSelf: 'center',
-      },
-      {
-        height,
-      },
-      animatedStyle,
-    ]} />
+    <View style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: scale(Spacing.three),
+      paddingVertical: verticalScale(Spacing.two),
+      borderBottomWidth: scale(1),
+      borderBottomColor: theme.border,
+      opacity: hasEarnings ? 1 : 0.5,
+    }}>
+      <View style={{ width: scale(90), flexShrink: 0 }}>
+        <Text style={{ fontSize: moderateScale(13), fontWeight: '700', color: theme.text }} numberOfLines={1}>
+          {dayName}
+        </Text>
+        <Text style={{ fontSize: moderateScale(11), color: theme.textSecondary }} numberOfLines={1}>
+          {dateLabel}
+        </Text>
+      </View>
+
+      <View style={{ flex: 1, flexShrink: 1, minHeight: verticalScale(12) }}>
+        <View style={{
+          width: '100%',
+          height: verticalScale(10),
+          borderRadius: moderateScale(5),
+          backgroundColor: theme.backgroundElement,
+          overflow: 'hidden',
+        }}>
+          <View style={{
+            width: progressWidth,
+            height: '100%',
+            borderRadius: moderateScale(5),
+            backgroundColor: hasEarnings ? theme.brand : theme.backgroundElement,
+          }} />
+        </View>
+      </View>
+
+      <View style={{ alignItems: 'flex-end', width: scale(110), flexShrink: 0 }}>
+        <Text style={{ fontSize: moderateScale(13), fontWeight: '700', color: theme.text }} numberOfLines={1}>
+          {item.rides_count} {item.rides_count === 1 ? 'ride' : 'rides'}
+        </Text>
+        <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }} numberOfLines={1}>
+          {formatCurrency(item.amount)}
+        </Text>
+      </View>
+    </View>
   );
 }
 
-function BreakdownChart({ breakdown, theme, scale, verticalScale, moderateScale }: {
+function BreakdownList({ breakdown, theme, scale, verticalScale, moderateScale }: {
   breakdown: { date: string; amount: number; rides_count: number }[];
   theme: ReturnType<typeof useTheme>;
   scale: (n: number) => number;
@@ -101,102 +124,20 @@ function BreakdownChart({ breakdown, theme, scale, verticalScale, moderateScale 
   }
 
   const maxAmount = Math.max(...breakdown.map((b) => b.amount), 1);
-  const highestEarningDay = breakdown.reduce((max, item) => item.amount > max.amount ? item : max, breakdown[0]);
-  const chartHeight = verticalScale(120);
-
-  const formatShortDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    if (Number.isNaN(date.getTime())) return dateStr;
-    return new Intl.DateTimeFormat('en-GB', {
-      day: 'numeric',
-      month: 'short',
-    }).format(date);
-  };
 
   return (
-    <View style={{ gap: verticalScale(Spacing.three) }}>
-      <View style={{
-        height: chartHeight,
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        paddingHorizontal: scale(Spacing.one),
-      }}>
-        {breakdown.map((item, index) => {
-          const targetHeight = maxAmount > 0 ? (item.amount / maxAmount) * (chartHeight - verticalScale(20)) : 0;
-          const barHeight = Math.max(targetHeight, verticalScale(4));
-          const isHighest = item.amount === highestEarningDay.amount && item.amount > 0;
-          const hasEarnings = item.amount > 0;
-
-          return (
-            <View key={item.date} style={{ alignItems: 'center', gap: verticalScale(Spacing.one), flex: 1 }}>
-              {isHighest && hasEarnings && (
-                <View style={{
-                  backgroundColor: theme.brand,
-                  paddingHorizontal: scale(Spacing.one),
-                  paddingVertical: verticalScale(Spacing.half),
-                  borderRadius: moderateScale(8),
-                  marginBottom: verticalScale(Spacing.half),
-                }}>
-                  <Text style={{
-                    fontSize: moderateScale(10),
-                    fontWeight: '700',
-                    color: theme.brandText,
-                  }}>
-                    {formatCurrency(item.amount)}
-                  </Text>
-                </View>
-              )}
-
-              <AnimatedBar
-                height={barHeight}
-                hasEarnings={hasEarnings}
-                theme={theme}
-                scale={scale}
-                verticalScale={verticalScale}
-                moderateScale={moderateScale}
-                delayMs={index * 60}
-              />
-
-              <Text style={{
-                fontSize: moderateScale(10),
-                color: theme.textSecondary,
-                textAlign: 'center',
-                marginTop: verticalScale(Spacing.half),
-              }}>
-                {formatShortDate(item.date)}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
-
-      <View style={{
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: scale(Spacing.three),
-        paddingTop: verticalScale(Spacing.one),
-      }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.one) }}>
-          <View style={{
-            width: scale(8),
-            height: scale(8),
-            borderRadius: moderateScale(4),
-            backgroundColor: theme.brand,
-          }} />
-          <Text style={{ fontSize: moderateScale(11), color: theme.textSecondary }}>Earnings</Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.one) }}>
-          <View style={{
-            width: scale(8),
-            height: scale(8),
-            borderRadius: moderateScale(4),
-            backgroundColor: theme.backgroundElement,
-            opacity: 0.3,
-          }} />
-          <Text style={{ fontSize: moderateScale(11), color: theme.textSecondary }}>No earnings</Text>
-        </View>
-      </View>
+    <View style={{ gap: verticalScale(Spacing.one) }}>
+      {breakdown.map((item) => (
+        <BreakdownLine
+          key={item.date}
+          item={item}
+          maxAmount={maxAmount}
+          theme={theme}
+          scale={scale}
+          verticalScale={verticalScale}
+          moderateScale={moderateScale}
+        />
+      ))}
     </View>
   );
 }
@@ -791,7 +732,7 @@ export default function EarningsScreen() {
                 <Text style={{ fontSize: moderateScale(15), fontWeight: '700', color: theme.text }}>
                   {period === 'weekly' ? 'Weekly' : period === 'monthly' ? 'Monthly' : 'Daily'} Breakdown
                 </Text>
-                <BreakdownChart
+                <BreakdownList
                   breakdown={breakdownList}
                   theme={theme}
                   scale={scale}
