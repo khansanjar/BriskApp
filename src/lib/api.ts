@@ -481,12 +481,12 @@ export async function getDriverEarningsReport(
   date: string,
   page: number = 1,
   limit: number = 10
-): Promise<ApiResponse<EarningsData>> {
+): Promise<EarningsData> {
   const search = new URLSearchParams();
   search.set('period', period);
   search.set('date', date);
   search.set('page', String(page));
   search.set('limit', String(limit));
   const query = search.toString();
-  return request<ApiResponse<EarningsData>>(`/earnings${query ? `?${query}` : ''}`);
+  return request<EarningsData>(`/earnings${query ? `?${query}` : ''}`);
 }

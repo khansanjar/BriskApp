@@ -5,9 +5,9 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
     ActivityIndicator,
+    FlatList,
     Pressable,
     RefreshControl,
-    ScrollView,
     Text,
     View,
 } from 'react-native';
@@ -21,7 +21,6 @@ import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import {
     getDriverEarningsReport,
-    type ApiResponse,
     type EarningsData,
 } from '@/lib/api';
 import { formatCurrency, formatDate, formatTime } from '@/lib/format';
@@ -157,7 +156,7 @@ export default function EarningsScreen() {
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
-  const [response, setResponse] = useState<ApiResponse<EarningsData> | null>(null);
+  const [response, setResponse] = useState<EarningsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -196,12 +195,9 @@ export default function EarningsScreen() {
           if (!prev) return res;
           return {
             ...res,
-            data: {
-              ...res.data,
-              rides: {
-                ...res.data.rides,
-                items: [...prev.data.rides.items, ...res.data.rides.items],
-              },
+            rides: {
+              ...res.rides,
+              items: [...prev.rides.items, ...res.rides.items],
             },
           };
         });
@@ -232,238 +228,188 @@ export default function EarningsScreen() {
 
   const loadMore = useCallback(() => {
     if (!response || loadingMore) return;
-    const lastPage = response.data.rides.last_page;
+    const lastPage = response?.rides.last_page ?? 1;
     if (page >= lastPage) return;
     const nextPage = page + 1;
     setPage(nextPage);
     loadEarnings(nextPage);
   }, [response, loadingMore, page, loadEarnings]);
 
-  const earningsData = response?.data;
+  const earningsData = response;
   const totalAmount = earningsData?.summary?.total_amount ?? 0;
   const totalRides = earningsData?.summary?.total_rides ?? 0;
   const breakdownList = earningsData?.breakdown ?? [];
   const ridesList = earningsData?.rides?.items ?? [];
-  const lastPage = earningsData?.rides?.last_page ?? 1;
   const showBreakdown = period !== 'daily';
 
   return (
     <Screen scroll={false}>
-      {/* Header */}
-      <View style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingTop: insets.top + verticalScale(Spacing.three),
-        paddingHorizontal: scale(Spacing.four),
-        paddingBottom: verticalScale(Spacing.three),
-        backgroundColor: theme.background,
-      }}>
-        <Pressable onPress={() => router.back()} style={{ padding: scale(Spacing.one) }}>
-          <Ionicons name="arrow-back" size={scale(24)} color={theme.text} />
-        </Pressable>
-        <Text style={{ fontSize: moderateScale(18), fontWeight: '700', color: theme.text }}>
-          Earnings & Reports
-        </Text>
-        <View style={{ width: scale(32) }} />
-      </View>
-
-      <ScrollView
-        style={{ flex: 1, backgroundColor: theme.background }}
-        contentContainerStyle={{ paddingHorizontal: scale(Spacing.four), paddingBottom: verticalScale(Spacing.six) }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={theme.brand}
-          />
-        }
-        onScroll={({ nativeEvent }) => {
-          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-          const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 100;
-          if (isCloseToBottom) {
-            loadMore();
-          }
-        }}
-        scrollEventThrottle={400}
-      >
-        {/* Period Filter + Date Picker */}
-        <View style={{ gap: verticalScale(Spacing.two), marginBottom: verticalScale(Spacing.three) }}>
-          <View style={{
-            flexDirection: 'row',
-            borderRadius: moderateScale(14),
-            padding: scale(Spacing.half),
-            gap: scale(Spacing.half),
-            backgroundColor: theme.backgroundElement,
-          }}>
-            {PERIODS.map((p) => {
-              const active = period === p.key;
-              return (
-                <Pressable
-                  key={p.key}
-                  onPress={() => handlePeriodChange(p.key)}
-                  style={{
-                    flex: 1,
-                    paddingVertical: verticalScale(Spacing.two),
-                    borderRadius: moderateScale(10),
-                    alignItems: 'center',
-                    backgroundColor: active ? theme.brand : undefined,
-                  }}>
-                  <Text
-                    style={{
-                      color: active ? theme.brandText : theme.textSecondary,
-                      fontWeight: '700',
-                      fontSize: moderateScale(13),
-                    }}>
-                    {p.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <Pressable
-            onPress={() => setShowDatePicker(true)}
-            style={{
-              borderRadius: moderateScale(14),
-              padding: scale(Spacing.two),
-              backgroundColor: theme.backgroundElement,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
-              <Ionicons name="calendar-outline" size={scale(18)} color={theme.textSecondary} />
-              <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>
-                {formatDate(dateString)}
-              </Text>
-            </View>
-            <Ionicons name="chevron-down-outline" size={scale(18)} color={theme.textSecondary} />
+      <View style={{ flex: 1, backgroundColor: theme.background }}>
+        {/* Header */}
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingTop: insets.top + verticalScale(Spacing.three),
+          paddingHorizontal: scale(Spacing.four),
+          paddingBottom: verticalScale(Spacing.three),
+          backgroundColor: theme.background,
+        }}>
+          <Pressable onPress={() => router.back()} style={{ padding: scale(Spacing.one) }}>
+            <Ionicons name="arrow-back" size={scale(24)} color={theme.text} />
           </Pressable>
-          {showDatePicker && (
-            <DateTimePickerExpo
-              value={selectedDate}
-              mode="date"
-              presentation="dialog"
-              onChange={handleDateChange}
-              onDismiss={handleDateDismiss}
-              display="default"
-              accentColor={theme.brand}
-            />
-          )}
+          <Text style={{ fontSize: moderateScale(18), fontWeight: '700', color: theme.text }}>
+            Earnings & Reports
+          </Text>
+          <View style={{ width: scale(32) }} />
         </View>
 
-        {loading && !response ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: verticalScale(Spacing.six) }}>
-            <ActivityIndicator size="large" color={theme.brand} />
-          </View>
-        ) : error ? (
-          <View style={{ flex: 1, justifyContent: 'center', paddingVertical: verticalScale(Spacing.six) }}>
-            <EmptyState
-              icon="alert-circle-outline"
-              title="Error loading earnings"
-              description={error}
-              tone="danger"
-              action={
-                <Pressable onPress={onRefresh} style={{
-                  paddingHorizontal: scale(Spacing.four),
-                  paddingVertical: verticalScale(Spacing.two),
-                  borderRadius: moderateScale(10),
-                  backgroundColor: theme.brand,
+        <FlatList
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingHorizontal: scale(Spacing.four), paddingBottom: verticalScale(Spacing.six) }}
+          ListHeaderComponent={
+            <>
+              {/* Period Filter + Date Picker */}
+              <View style={{ gap: verticalScale(Spacing.two), marginBottom: verticalScale(Spacing.three) }}>
+                <View style={{
+                  flexDirection: 'row',
+                  borderRadius: moderateScale(14),
+                  padding: scale(Spacing.half),
+                  gap: scale(Spacing.half),
+                  backgroundColor: theme.backgroundElement,
                 }}>
-                  <Text style={{ color: theme.brandText, fontWeight: '700', fontSize: moderateScale(14) }}>
-                    Retry
-                  </Text>
-                </Pressable>
-              }
-            />
-          </View>
-        ) : response ? (
-          <>
-            {/* PART 1: Summary + Rides */}
-            <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
-              <Text style={{ fontSize: moderateScale(15), fontWeight: '700', marginBottom: verticalScale(Spacing.three), color: theme.text }}>
-                {period === 'daily' ? 'Today\'s' : period === 'weekly' ? 'This Week\'s' : 'This Month\'s'} Summary
-              </Text>
-              <View style={{
-                flexDirection: isLandscape ? 'row' : 'column',
-                gap: isLandscape ? scale(Spacing.four) : verticalScale(Spacing.three),
-              }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: moderateScale(13), color: theme.textSecondary, marginBottom: verticalScale(Spacing.one) }}>
-                    Total Earnings
-                  </Text>
-                  <Text style={{ fontSize: moderateScale(28), fontWeight: '800', color: theme.brand }}>
-                    {formatCurrency(totalAmount)}
-                  </Text>
+                  {PERIODS.map((p) => {
+                    const active = period === p.key;
+                    return (
+                      <Pressable
+                        key={p.key}
+                        onPress={() => handlePeriodChange(p.key)}
+                        style={{
+                          flex: 1,
+                          paddingVertical: verticalScale(Spacing.two),
+                          borderRadius: moderateScale(10),
+                          alignItems: 'center',
+                          backgroundColor: active ? theme.brand : undefined,
+                        }}>
+                        <Text
+                          style={{
+                            color: active ? theme.brandText : theme.textSecondary,
+                            fontWeight: '700',
+                            fontSize: moderateScale(13),
+                          }}>
+                          {p.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: moderateScale(13), color: theme.textSecondary, marginBottom: verticalScale(Spacing.one) }}>
-                    Completed Rides
-                  </Text>
-                  <Text style={{ fontSize: moderateScale(28), fontWeight: '800', color: theme.text }}>
-                    {totalRides}
-                  </Text>
-                </View>
-              </View>
-            </Card>
 
-            {/* Completed Rides List */}
-            <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
-              <Text style={{ fontSize: moderateScale(15), fontWeight: '700', marginBottom: verticalScale(Spacing.three), color: theme.text }}>
-                Completed Rides
-              </Text>
-              {ridesList.length === 0 ? (
-                <EmptyState
-                  icon="car-outline"
-                  title="No rides yet"
-                  description="No completed rides for this period"
-                />
-              ) : (
-                <>
-                  {ridesList.map((ride) => (
-                    <RideItem
-                      key={ride.booking_id}
-                      ride={ride}
-                      theme={theme}
-                      scale={scale}
-                      verticalScale={verticalScale}
-                      moderateScale={moderateScale}
-                    />
-                  ))}
-                  {loadingMore && (
-                    <View style={{ paddingVertical: verticalScale(Spacing.three), alignItems: 'center' }}>
-                      <ActivityIndicator size="small" color={theme.brand} />
-                    </View>
-                  )}
-                  {page >= lastPage && ridesList.length > 0 && (
-                    <Text style={{
-                      textAlign: 'center',
-                      fontSize: moderateScale(12),
-                      color: theme.textSecondary,
-                      paddingVertical: verticalScale(Spacing.two),
-                    }}>
-                      End of list
+                <Pressable
+                  onPress={() => setShowDatePicker(true)}
+                  style={{
+                    borderRadius: moderateScale(14),
+                    padding: scale(Spacing.two),
+                    backgroundColor: theme.backgroundElement,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+                    <Ionicons name="calendar-outline" size={scale(18)} color={theme.textSecondary} />
+                    <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>
+                      {formatDate(dateString)}
                     </Text>
-                  )}
-                </>
-              )}
-            </Card>
+                  </View>
+                  <Ionicons name="chevron-down-outline" size={scale(18)} color={theme.textSecondary} />
+                </Pressable>
+                {showDatePicker && (
+                  <DateTimePickerExpo
+                    value={selectedDate}
+                    mode="date"
+                    presentation="dialog"
+                    onChange={handleDateChange}
+                    onDismiss={handleDateDismiss}
+                    display="default"
+                    accentColor={theme.brand}
+                  />
+                )}
+              </View>
 
-            {/* PART 2: Breakdown Chart */}
-            <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
-              <Text style={{ fontSize: moderateScale(15), fontWeight: '700', marginBottom: verticalScale(Spacing.three), color: theme.text }}>
-                {period === 'weekly' ? 'Weekly' : period === 'monthly' ? 'Monthly' : 'Daily'} Breakdown
-              </Text>
-              {!showBreakdown ? (
-                <View style={{ alignItems: 'center', paddingVertical: verticalScale(Spacing.four), gap: verticalScale(Spacing.two) }}>
-                  <Ionicons name="calendar-outline" size={moderateScale(32)} color={theme.textSecondary} />
-                  <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary, textAlign: 'center' }}>
-                    Breakdown is not available for daily view. Select Weekly or Monthly to see the chart.
-                  </Text>
+              {loading && !response ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: verticalScale(Spacing.six) }}>
+                  <ActivityIndicator size="large" color={theme.brand} />
                 </View>
-              ) : (
+              ) : error ? (
+                <View style={{ flex: 1, justifyContent: 'center', paddingVertical: verticalScale(Spacing.six) }}>
+                  <EmptyState
+                    icon="alert-circle-outline"
+                    title="Error loading earnings"
+                    description={error}
+                    tone="danger"
+                    action={
+                      <Pressable onPress={onRefresh} style={{
+                        paddingHorizontal: scale(Spacing.four),
+                        paddingVertical: verticalScale(Spacing.two),
+                        borderRadius: moderateScale(10),
+                        backgroundColor: theme.brand,
+                      }}>
+                        <Text style={{ color: theme.brandText, fontWeight: '700', fontSize: moderateScale(14) }}>
+                          Retry
+                        </Text>
+                      </Pressable>
+                    }
+                  />
+                </View>
+              ) : response ? (
+                <>
+                  {/* Summary Cards */}
+                  <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
+                    <Text style={{ fontSize: moderateScale(15), fontWeight: '700', marginBottom: verticalScale(Spacing.three), color: theme.text }}>
+                      {period === 'daily' ? 'Today\'s' : period === 'weekly' ? 'This Week\'s' : 'This Month\'s'} Summary
+                    </Text>
+                    <View style={{
+                      flexDirection: isLandscape ? 'row' : 'column',
+                      gap: isLandscape ? scale(Spacing.four) : verticalScale(Spacing.three),
+                    }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: moderateScale(13), color: theme.textSecondary, marginBottom: verticalScale(Spacing.one) }}>
+                          Total Earnings
+                        </Text>
+                        <Text style={{ fontSize: moderateScale(28), fontWeight: '800', color: theme.brand }}>
+                          {formatCurrency(totalAmount)}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: moderateScale(13), color: theme.textSecondary, marginBottom: verticalScale(Spacing.one) }}>
+                          Completed Rides
+                        </Text>
+                        <Text style={{ fontSize: moderateScale(28), fontWeight: '800', color: theme.text }}>
+                          {totalRides}
+                        </Text>
+                      </View>
+                    </View>
+                  </Card>
+                </>
+              ) : null}
+            </>
+          }
+          data={ridesList}
+          renderItem={({ item }) => (
+            <RideItem
+              ride={item}
+              theme={theme}
+              scale={scale}
+              verticalScale={verticalScale}
+              moderateScale={moderateScale}
+            />
+          )}
+          keyExtractor={(item) => String(item.booking_id)}
+          ListFooterComponent={
+            showBreakdown && breakdownList.length > 0 ? (
+              <Card style={{ marginBottom: verticalScale(Spacing.three), marginTop: verticalScale(Spacing.two) }}>
+                <Text style={{ fontSize: moderateScale(15), fontWeight: '700', marginBottom: verticalScale(Spacing.three), color: theme.text }}>
+                  {period === 'weekly' ? 'Weekly' : period === 'monthly' ? 'Monthly' : 'Daily'} Breakdown
+                </Text>
                 <BreakdownChart
                   breakdown={breakdownList}
                   theme={theme}
@@ -471,11 +417,32 @@ export default function EarningsScreen() {
                   verticalScale={verticalScale}
                   moderateScale={moderateScale}
                 />
-              )}
-            </Card>
-          </>
-        ) : null}
-      </ScrollView>
+              </Card>
+            ) : null
+          }
+          ListEmptyComponent={
+            !loading && !error && response ? (
+              <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
+                <EmptyState
+                  icon="car-outline"
+                  title="No rides yet"
+                  description="No completed rides for this period"
+                />
+              </Card>
+            ) : null
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={theme.brand}
+            />
+          }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
     </Screen>
   );
 }
