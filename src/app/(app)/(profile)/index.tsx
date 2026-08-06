@@ -165,9 +165,7 @@ export default function ProfileScreen() {
               <Text style={{ fontSize: moderateScale(15), fontWeight: '700', color: theme.text }}>
                 Earnings & Reports
               </Text>
-              <Text style={{ fontSize: moderateScale(13), color: theme.textSecondary }}>
-                View daily, weekly & monthly payout details
-              </Text>
+              
             </View>
           </View>
         </Pressable>

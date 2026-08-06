@@ -1,6 +1,6 @@
 // src/app/(app)/(profile)/earnings.tsx
-import Ionicons from '@react-native-vector-icons/ionicons';
 import DateTimePickerExpo from '@expo/ui/community/datetime-picker';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
@@ -25,6 +25,19 @@ import {
 } from '@/lib/api';
 import { formatCurrency, formatDate, formatTime } from '@/lib/format';
 
+// HTML entity decoder function
+function decodeHTMLEntities(text: string): string {
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+  };
+  return text.replace(/&[a-zA-Z0-9#]+;/g, (entity) => entities[entity] || entity);
+}
+
 const PERIODS: { key: 'daily' | 'weekly' | 'monthly'; label: string }[] = [
   { key: 'daily', label: 'Daily' },
   { key: 'weekly', label: 'Weekly' },
@@ -45,30 +58,114 @@ function BreakdownChart({ breakdown, theme, scale, verticalScale, moderateScale 
       </View>
     );
   }
+  
   const maxAmount = Math.max(...breakdown.map((b) => b.amount), 1);
+  const highestEarningDay = breakdown.reduce((max, item) => item.amount > max.amount ? item : max, breakdown[0]);
+  const chartHeight = verticalScale(120);
+  const barWidth = scale(12);
+  const gap = scale(8);
+  
+  // Format date to short form (e.g., "1 Aug", "5 Aug")
+  const formatShortDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return dateStr;
+    return new Intl.DateTimeFormat('en-GB', {
+      day: 'numeric',
+      month: 'short',
+    }).format(date);
+  };
+
   return (
-    <View style={{ gap: verticalScale(Spacing.two) }}>
-      {breakdown.map((item) => {
-        const pct = Math.max((item.amount / maxAmount) * 100, 2);
-        return (
-          <View key={item.date} style={{ gap: verticalScale(Spacing.half) }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary, flex: 1 }} numberOfLines={1}>
-                {formatDate(item.date)}
-              </Text>
-              <Text style={{ fontSize: moderateScale(12), fontWeight: '700', color: theme.text, marginLeft: scale(Spacing.two) }}>
-                {item.rides_count} {item.rides_count === 1 ? 'ride' : 'rides'}
-              </Text>
-              <Text style={{ fontSize: moderateScale(13), fontWeight: '800', color: theme.brand, marginLeft: scale(Spacing.two) }}>
-                {formatCurrency(item.amount)}
+    <View style={{ gap: verticalScale(Spacing.three) }}>
+      {/* Bar Chart */}
+      <View style={{ 
+        height: chartHeight,
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        paddingHorizontal: scale(Spacing.one),
+      }}>
+        {breakdown.map((item) => {
+          const barHeight = maxAmount > 0 ? (item.amount / maxAmount) * (chartHeight - verticalScale(20)) : 0;
+          const isHighest = item.amount === highestEarningDay.amount && item.amount > 0;
+          const hasEarnings = item.amount > 0;
+          
+          return (
+            <View key={item.date} style={{ alignItems: 'center', gap: verticalScale(Spacing.one) }}>
+              {/* Highest earning badge */}
+              {isHighest && (
+                <View style={{
+                  backgroundColor: theme.brand,
+                  paddingHorizontal: scale(Spacing.one),
+                  paddingVertical: verticalScale(Spacing.half),
+                  borderRadius: moderateScale(8),
+                  marginBottom: verticalScale(Spacing.half),
+                }}>
+                  <Text style={{
+                    fontSize: moderateScale(10),
+                    fontWeight: '700',
+                    color: theme.brandText,
+                  }}>
+                    {formatCurrency(item.amount)}
+                  </Text>
+                </View>
+              )}
+              
+              {/* Bar */}
+              <View style={{
+                width: barWidth,
+                height: Math.max(barHeight, verticalScale(4)),
+                backgroundColor: hasEarnings ? theme.brand : theme.backgroundElement,
+                borderRadius: moderateScale(6),
+                borderTopLeftRadius: moderateScale(6),
+                borderTopRightRadius: moderateScale(6),
+                opacity: hasEarnings ? 1 : 0.3,
+              }} />
+              
+              {/* Date Label */}
+              <Text style={{
+                fontSize: moderateScale(10),
+                color: theme.textSecondary,
+                textAlign: 'center',
+              }}>
+                {formatShortDate(item.date)}
               </Text>
             </View>
-            <View style={{ height: verticalScale(10), borderRadius: moderateScale(5), backgroundColor: theme.backgroundElement, overflow: 'hidden' }}>
-              <View style={{ width: `${pct}%`, height: '100%', borderRadius: moderateScale(5), backgroundColor: theme.brand }} />
-            </View>
-          </View>
-        );
-      })}
+          );
+        })}
+      </View>
+      
+      {/* Legend */}
+      <View style={{ 
+        flexDirection: 'row', 
+        justifyContent: 'center', 
+        gap: scale(Spacing.three),
+        paddingTop: verticalScale(Spacing.one),
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.one) }}>
+          <View style={{ 
+            width: scale(8), 
+            height: scale(8), 
+            borderRadius: moderateScale(4), 
+            backgroundColor: theme.brand 
+          }} />
+          <Text style={{ fontSize: moderateScale(11), color: theme.textSecondary }}>
+            Earnings
+          </Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.one) }}>
+          <View style={{ 
+            width: scale(8), 
+            height: scale(8), 
+            borderRadius: moderateScale(4), 
+            backgroundColor: theme.backgroundElement,
+            opacity: 0.3,
+          }} />
+          <Text style={{ fontSize: moderateScale(11), color: theme.textSecondary }}>
+            No earnings
+          </Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -92,56 +189,142 @@ function RideItem({ ride, theme, scale, verticalScale, moderateScale }: {
   verticalScale: (n: number) => number;
   moderateScale: (n: number) => number;
 }) {
+  const decodedPickup = decodeHTMLEntities(ride.pickup_location);
+  const decodedDropoff = decodeHTMLEntities(ride.dropoff_location);
+  
   return (
     <Pressable
       onPress={() => router.push(`/(app)/(bookings)/booking/${ride.booking_id}`)}
       style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
       <View style={{
-        paddingVertical: verticalScale(Spacing.two),
-        borderBottomWidth: scale(1),
-        borderBottomColor: theme.border,
-        gap: verticalScale(Spacing.one),
+        marginBottom: verticalScale(Spacing.two),
+        borderWidth: scale(1),
+        borderColor: theme.border,
+        borderRadius: moderateScale(16),
+        backgroundColor: theme.surface,
+        padding: scale(Spacing.three),
+        gap: verticalScale(Spacing.three),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
       }}>
+        {/* Header - Order ID, Vehicle Type, Fare */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <View style={{ flex: 1, marginRight: scale(Spacing.two) }}>
-            <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }} numberOfLines={1}>
-              {ride.pickup_location}
-            </Text>
-            <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }} numberOfLines={1}>
-              to {ride.dropoff_location}
-            </Text>
+          <View style={{ flex: 1, gap: verticalScale(Spacing.one) }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+              <Text style={{ fontSize: moderateScale(12), fontWeight: '600', color: theme.textSecondary }}>
+                #{ride.order_id}
+              </Text>
+              {ride.vehicleType && (
+                <View style={{
+                  paddingHorizontal: scale(Spacing.two),
+                  paddingVertical: verticalScale(Spacing.half),
+                  borderRadius: moderateScale(6),
+                  backgroundColor: theme.backgroundElement,
+                }}>
+                  <Text style={{ fontSize: moderateScale(10), fontWeight: '600', color: theme.text, textTransform: 'capitalize' }}>
+                    {ride.vehicleType}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
-          <Text style={{ fontSize: moderateScale(16), fontWeight: '800', color: theme.text }}>
-            {formatCurrency(ride.total_fare)}
-          </Text>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={{ fontSize: moderateScale(18), fontWeight: '800', color: theme.success }}>
+              {formatCurrency(ride.total_fare)}
+            </Text>
+            <View style={{
+              paddingHorizontal: scale(Spacing.two),
+              paddingVertical: verticalScale(Spacing.half),
+              borderRadius: moderateScale(999),
+              backgroundColor: theme.successSoft,
+              marginTop: verticalScale(Spacing.half),
+            }}>
+              <Text style={{ fontSize: moderateScale(11), fontWeight: '700', color: theme.success, textTransform: 'capitalize' }}>
+                {ride.driver_status}
+              </Text>
+            </View>
+          </View>
         </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: scale(Spacing.two) }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.three) }}>
+
+        {/* Route Timeline */}
+        <View style={{ flexDirection: 'row', gap: scale(Spacing.three) }}>
+          {/* Timeline Line */}
+          <View style={{ alignItems: 'center', justifyContent: 'flex-start', paddingTop: verticalScale(Spacing.one) }}>
+            {/* Pickup Dot */}
+            <View style={{
+              width: scale(10),
+              height: scale(10),
+              borderRadius: moderateScale(5),
+              backgroundColor: theme.success,
+            }} />
+            {/* Vertical Line */}
+            <View style={{
+              width: scale(2),
+              height: verticalScale(24),
+              backgroundColor: theme.border,
+            }} />
+            {/* Dropoff Marker */}
+            <View style={{
+              width: scale(10),
+              height: scale(10),
+              borderRadius: moderateScale(5),
+              backgroundColor: theme.brand,
+            }} />
+          </View>
+
+          {/* Locations */}
+          <View style={{ flex: 1, gap: verticalScale(Spacing.three), justifyContent: 'space-between' }}>
+            <View>
+              <Text style={{ fontSize: moderateScale(11), color: theme.textSecondary, marginBottom: verticalScale(Spacing.half) }}>
+                Pickup
+              </Text>
+              <Text style={{ fontSize: moderateScale(13), fontWeight: '500', color: theme.text }} numberOfLines={2}>
+                {decodedPickup}
+              </Text>
+            </View>
+            <View>
+              <Text style={{ fontSize: moderateScale(11), color: theme.textSecondary, marginBottom: verticalScale(Spacing.half) }}>
+                Dropoff
+              </Text>
+              <Text style={{ fontSize: moderateScale(13), fontWeight: '500', color: theme.text }} numberOfLines={2}>
+                {decodedDropoff}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Footer - Customer Info & Time */}
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingTop: verticalScale(Spacing.two),
+          borderTopWidth: scale(1),
+          borderTopColor: theme.border,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+            <Ionicons name="person-outline" size={moderateScale(14)} color={theme.textSecondary} />
+            <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }} numberOfLines={1}>
+              {ride.customer_name}
+            </Text>
+            {ride.customer_phone && (
+              <>
+                <Ionicons name="call-outline" size={moderateScale(14)} color={theme.textSecondary} />
+                <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }} numberOfLines={1}>
+                  {ride.customer_phone}
+                </Text>
+              </>
+            )}
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.one) }}>
+            <Ionicons name="time-outline" size={moderateScale(14)} color={theme.textSecondary} />
             <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>
               {formatDate(ride.pickup_date)} • {formatTime(ride.pickup_time)}
             </Text>
-            {ride.vehicleType ? (
-              <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary, textTransform: 'capitalize' }}>
-                {ride.vehicleType}
-              </Text>
-            ) : null}
           </View>
-          <View style={{
-            paddingHorizontal: scale(Spacing.two),
-            paddingVertical: verticalScale(Spacing.half),
-            borderRadius: moderateScale(999),
-            backgroundColor: theme.successSoft,
-          }}>
-            <Text style={{ fontSize: moderateScale(11), fontWeight: '700', color: theme.success, textTransform: 'capitalize' }}>
-              {ride.driver_status}
-            </Text>
-          </View>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.one) }}>
-          <Ionicons name="person-outline" size={moderateScale(12)} color={theme.textSecondary} />
-          <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }} numberOfLines={1}>
-            {ride.customer_name} {ride.customer_phone ? `• ${ride.customer_phone}` : ''}
-          </Text>
         </View>
       </View>
     </Pressable>
