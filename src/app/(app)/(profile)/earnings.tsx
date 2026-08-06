@@ -2,13 +2,15 @@
 import DateTimePickerExpo from '@expo/ui/community/datetime-picker';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   Modal,
   Pressable,
   RefreshControl,
+  SafeAreaView,
   Text,
   View,
 } from 'react-native';
@@ -43,21 +45,38 @@ const PERIODS: { key: 'daily' | 'weekly' | 'monthly'; label: string }[] = [
   { key: 'monthly', label: 'Monthly' },
 ];
 
-function BreakdownLine({ item, maxAmount, theme, scale, verticalScale, moderateScale }: {
+function BreakdownLine({ item, maxRides, theme, scale, verticalScale, moderateScale, period }: {
   item: { date: string; amount: number; rides_count: number };
-  maxAmount: number;
+  maxRides: number;
   theme: ReturnType<typeof useTheme>;
   scale: (n: number) => number;
   verticalScale: (n: number) => number;
   moderateScale: (n: number) => number;
+  period: 'daily' | 'weekly' | 'monthly';
 }) {
-  const hasEarnings = item.amount > 0;
-  const ratio = maxAmount > 0 ? item.amount / maxAmount : 0;
-  const progressWidth = hasEarnings ? scale(60) + (scale(120) * ratio) : scale(60);
+  const [animatedWidth] = useState(() => new Animated.Value(0));
+  const hasEarnings = item.rides_count > 0;
+  const linePercentage = maxRides > 0 ? (item.rides_count / maxRides) * 100 : 0;
+  const dynamicWidthPercent = Math.max(linePercentage, 10);
+
+  useEffect(() => {
+    animatedWidth.setValue(0);
+    Animated.timing(animatedWidth, {
+      toValue: dynamicWidthPercent,
+      duration: 600,
+      useNativeDriver: false,
+    }).start();
+  }, [period, dynamicWidthPercent, animatedWidth]);
 
   const dateObj = new Date(item.date);
   const dayName = Number.isNaN(dateObj.getTime()) ? '' : new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(dateObj);
   const dateLabel = Number.isNaN(dateObj.getTime()) ? item.date : new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(dateObj);
+
+  const widthInterpolate = animatedWidth.interpolate({
+    inputRange: [0, 100],
+    outputRange: ['0%', '100%'],
+    extrapolate: 'clamp',
+  });
 
   return (
     <View style={{
@@ -86,12 +105,22 @@ function BreakdownLine({ item, maxAmount, theme, scale, verticalScale, moderateS
           backgroundColor: theme.backgroundElement,
           overflow: 'hidden',
         }}>
-          <View style={{
-            width: progressWidth,
-            height: '100%',
-            borderRadius: moderateScale(5),
-            backgroundColor: hasEarnings ? theme.brand : theme.backgroundElement,
-          }} />
+          {hasEarnings ? (
+            <Animated.View style={{
+              width: widthInterpolate,
+              height: '100%',
+              borderRadius: moderateScale(5),
+              backgroundColor: theme.brand,
+            }} />
+          ) : (
+            <View style={{
+              width: '100%',
+              height: '100%',
+              borderRadius: moderateScale(5),
+              backgroundColor: theme.border,
+              opacity: 0.3,
+            }} />
+          )}
         </View>
       </View>
 
@@ -107,12 +136,13 @@ function BreakdownLine({ item, maxAmount, theme, scale, verticalScale, moderateS
   );
 }
 
-function BreakdownList({ breakdown, theme, scale, verticalScale, moderateScale }: {
+function BreakdownList({ breakdown, theme, scale, verticalScale, moderateScale, period }: {
   breakdown: { date: string; amount: number; rides_count: number }[];
   theme: ReturnType<typeof useTheme>;
   scale: (n: number) => number;
   verticalScale: (n: number) => number;
   moderateScale: (n: number) => number;
+  period: 'daily' | 'weekly' | 'monthly';
 }) {
   if (breakdown.length === 0) {
     return (
@@ -122,7 +152,7 @@ function BreakdownList({ breakdown, theme, scale, verticalScale, moderateScale }
     );
   }
 
-  const maxAmount = Math.max(...breakdown.map((b) => b.amount), 1);
+  const maxRides = Math.max(...(breakdown.map((b) => b.rides_count) || []), 1);
 
   return (
     <View style={{ gap: verticalScale(Spacing.one) }}>
@@ -130,11 +160,12 @@ function BreakdownList({ breakdown, theme, scale, verticalScale, moderateScale }
         <BreakdownLine
           key={item.date}
           item={item}
-          maxAmount={maxAmount}
+          maxRides={maxRides}
           theme={theme}
           scale={scale}
           verticalScale={verticalScale}
           moderateScale={moderateScale}
+          period={period}
         />
       ))}
     </View>
@@ -308,37 +339,42 @@ function RideDetailModal({ ride, visible, onClose, theme, scale, verticalScale, 
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
         <View style={{
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingTop: verticalScale(Spacing.three),
+          justifyContent: 'center',
+          position: 'relative',
+          paddingTop: verticalScale(Spacing.two),
           paddingHorizontal: scale(Spacing.four),
           paddingBottom: verticalScale(Spacing.two),
           backgroundColor: theme.background,
         }}>
-          <View style={{ flex: 1, flexShrink: 1 }}>
-            <Text style={{ fontSize: moderateScale(16), fontWeight: '800', color: theme.text }} numberOfLines={1}>
-              #{ride.order_id}
-            </Text>
-          </View>
-          <View style={{
-            paddingHorizontal: scale(Spacing.two),
-            paddingVertical: verticalScale(Spacing.half),
-            borderRadius: moderateScale(999),
-            backgroundColor: theme.successSoft,
-          }}>
-            <Text style={{ fontSize: moderateScale(12), fontWeight: '700', color: theme.success, textTransform: 'capitalize' }}>
-              {ride.driver_status}
-            </Text>
-          </View>
-          <Pressable onPress={onClose} style={{ padding: scale(Spacing.one), marginLeft: scale(Spacing.two) }}>
+          <Text style={{ fontSize: moderateScale(18), fontWeight: '700', color: theme.text }}>
+            Ride Details
+          </Text>
+          <Pressable onPress={onClose} style={{ position: 'absolute', right: scale(Spacing.four), padding: scale(Spacing.one) }}>
             <Ionicons name="close" size={moderateScale(24)} color={theme.text} />
           </Pressable>
         </View>
 
-        <View style={{ flex: 1, paddingHorizontal: scale(Spacing.four), gap: verticalScale(Spacing.three) }}>
+        <View style={{ paddingHorizontal: scale(Spacing.four), gap: verticalScale(Spacing.two), paddingBottom: verticalScale(Spacing.four) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.textSecondary }}>
+              #{ride.order_id}
+            </Text>
+            <View style={{
+              paddingHorizontal: scale(Spacing.two),
+              paddingVertical: verticalScale(Spacing.half),
+              borderRadius: moderateScale(999),
+              backgroundColor: theme.successSoft,
+            }}>
+              <Text style={{ fontSize: moderateScale(12), fontWeight: '700', color: theme.success, textTransform: 'capitalize' }}>
+                {ride.driver_status}
+              </Text>
+            </View>
+          </View>
+
           <Card style={{ gap: verticalScale(Spacing.three) }}>
             <View>
               <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary, marginBottom: verticalScale(Spacing.half), textTransform: 'uppercase', letterSpacing: scale(1) }}>
@@ -428,7 +464,7 @@ function RideDetailModal({ ride, visible, onClose, theme, scale, verticalScale, 
             <Text style={{ color: theme.brandText, fontWeight: '700', fontSize: moderateScale(16) }}>Close</Text>
           </Pressable>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -556,6 +592,8 @@ export default function EarningsScreen() {
         <FlatList
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingHorizontal: scale(Spacing.four), paddingBottom: verticalScale(Spacing.six + BottomTabInset + Spacing.three) }}
+          removeClippedSubviews={false}
+          scrollEventThrottle={16}
           ListHeaderComponent={
             <>
               <View style={{ gap: verticalScale(Spacing.two), marginBottom: verticalScale(Spacing.three) }}>
@@ -744,6 +782,7 @@ export default function EarningsScreen() {
                   scale={scale}
                   verticalScale={verticalScale}
                   moderateScale={moderateScale}
+                  period={period}
                 />
               </Card>
             ) : null

@@ -72,7 +72,7 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAllRides, setShowAllRides] = useState(false);
-  const [hideEarnings, setHideEarnings] = useState(false);
+  const [hideEarnings, setHideEarnings] = useState(true);
 
   const blinkAnim = useRef(new Animated.Value(1)).current;
 
@@ -281,7 +281,7 @@ export default function DashboardScreen() {
             <View style={{ flex: 1, gap: verticalScale(2) }}>
               <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Today&apos;s earnings</Text>
               <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }} numberOfLines={1} adjustsFontSizeToFit>
-                {hideEarnings ? '******' : (data ? formatCurrency(dayEarnings?.amount ?? 0) : '—')}
+                {hideEarnings ? '€••••' : (data ? formatCurrency(dayEarnings?.amount ?? 0) : '—')}
               </Text>
             </View>
 
@@ -291,7 +291,7 @@ export default function DashboardScreen() {
             <View style={{ flex: 1, gap: verticalScale(2) }}>
               <Text style={{ fontSize: moderateScale(11), fontWeight: '600', opacity: 0.85, color: theme.brandText }}>Rides today</Text>
               <Text style={{ fontSize: moderateScale(20), fontWeight: '800', lineHeight: verticalScale(24), color: theme.brandText }}>
-                {hideEarnings ? '**' : (data ? dayEarnings?.rides_count ?? 0 : '—')}
+                {hideEarnings ? '••••' : (data ? dayEarnings?.rides_count ?? 0 : '—')}
               </Text>
             </View>
           </View>
