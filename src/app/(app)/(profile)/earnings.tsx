@@ -63,7 +63,7 @@ function BreakdownLine({ item, maxRides, theme, scale, verticalScale, moderateSc
     animatedWidth.setValue(0);
     Animated.timing(animatedWidth, {
       toValue: dynamicWidthPercent,
-      duration: 600,
+      duration: 500,
       useNativeDriver: false,
     }).start();
   }, [period, dynamicWidthPercent, animatedWidth]);
@@ -338,133 +338,139 @@ function RideDetailModal({ ride, visible, onClose, theme, scale, verticalScale, 
   const decodedDropoff = decodeHTMLEntities(ride.dropoff_location);
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+    <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
+      <View style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.6)',
+      }}>
         <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          paddingTop: verticalScale(Spacing.two),
-          paddingHorizontal: scale(Spacing.four),
-          paddingBottom: verticalScale(Spacing.two),
+          width: '100%',
+          marginHorizontal: scale(16),
+          maxHeight: '85%',
           backgroundColor: theme.background,
+          borderRadius: moderateScale(16),
+          overflow: 'hidden',
         }}>
-          <Text style={{ fontSize: moderateScale(18), fontWeight: '700', color: theme.text }}>
-            Ride Details
-          </Text>
-          <Pressable onPress={onClose} style={{ position: 'absolute', right: scale(Spacing.four), padding: scale(Spacing.one) }}>
-            <Ionicons name="close" size={moderateScale(24)} color={theme.text} />
-          </Pressable>
-        </View>
-
-        <View style={{ paddingHorizontal: scale(Spacing.four), gap: verticalScale(Spacing.two), paddingBottom: verticalScale(Spacing.four) }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.textSecondary }}>
-              #{ride.order_id}
-            </Text>
+          <SafeAreaView style={{ backgroundColor: theme.background }}>
             <View style={{
-              paddingHorizontal: scale(Spacing.two),
-              paddingVertical: verticalScale(Spacing.half),
-              borderRadius: moderateScale(999),
-              backgroundColor: theme.successSoft,
-            }}>
-              <Text style={{ fontSize: moderateScale(12), fontWeight: '700', color: theme.success, textTransform: 'capitalize' }}>
-                {ride.driver_status}
-              </Text>
-            </View>
-          </View>
-
-          <Card style={{ gap: verticalScale(Spacing.three) }}>
-            <View>
-              <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary, marginBottom: verticalScale(Spacing.half), textTransform: 'uppercase', letterSpacing: scale(1) }}>
-                Pickup
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: scale(Spacing.two) }}>
-                <View style={{
-                  width: scale(10),
-                  height: scale(10),
-                  borderRadius: moderateScale(5),
-                  backgroundColor: theme.success,
-                  marginTop: verticalScale(Spacing.one),
-                }} />
-                <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text, flexShrink: 1 }}>{decodedPickup}</Text>
-              </View>
-            </View>
-
-            <View>
-              <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary, marginBottom: verticalScale(Spacing.half), textTransform: 'uppercase', letterSpacing: scale(1) }}>
-                Dropoff
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: scale(Spacing.two) }}>
-                <View style={{
-                  width: scale(10),
-                  height: scale(10),
-                  borderRadius: moderateScale(5),
-                  backgroundColor: theme.brand,
-                  marginTop: verticalScale(Spacing.one),
-                }} />
-                <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text, flexShrink: 1 }}>{decodedDropoff}</Text>
-              </View>
-            </View>
-          </Card>
-
-          <Card style={{ gap: verticalScale(Spacing.three) }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
-              <Ionicons name="person-outline" size={moderateScale(18)} color={theme.textSecondary} />
-              <View style={{ flexShrink: 1 }}>
-                <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>Customer</Text>
-                <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>{ride.customer_name}</Text>
-              </View>
-            </View>
-
-            {ride.customer_phone && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
-                <Ionicons name="call-outline" size={moderateScale(18)} color={theme.textSecondary} />
-                <View style={{ flexShrink: 1 }}>
-                  <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>Phone</Text>
-                  <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>{ride.customer_phone}</Text>
-                </View>
-              </View>
-            )}
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
-              <Ionicons name="calendar-outline" size={moderateScale(18)} color={theme.textSecondary} />
-              <View style={{ flexShrink: 1 }}>
-                <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>Pickup Date</Text>
-                <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>{formatDate(ride.pickup_date)}</Text>
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
-              <Ionicons name="time-outline" size={moderateScale(18)} color={theme.textSecondary} />
-              <View style={{ flexShrink: 1 }}>
-                <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>Pickup Time</Text>
-                <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>{formatTime(ride.pickup_time)}</Text>
-              </View>
-            </View>
-          </Card>
-
-          <Card style={{ gap: verticalScale(Spacing.two) }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary }}>Total Fare</Text>
-              <Text style={{ fontSize: moderateScale(18), fontWeight: '800', color: theme.success }}>{formatCurrency(ride.total_fare)}</Text>
-            </View>
-          </Card>
-
-          <Pressable
-            onPress={onClose}
-            style={{
-              paddingVertical: verticalScale(Spacing.three),
-              borderRadius: moderateScale(14),
-              backgroundColor: theme.brand,
+              flexDirection: 'row',
               alignItems: 'center',
-              marginTop: verticalScale(Spacing.two),
+              justifyContent: 'space-between',
+              paddingTop: verticalScale(Spacing.two),
+              paddingHorizontal: scale(Spacing.four),
+              paddingBottom: verticalScale(Spacing.two),
+              backgroundColor: theme.background,
             }}>
-            <Text style={{ color: theme.brandText, fontWeight: '700', fontSize: moderateScale(16) }}>Close</Text>
-          </Pressable>
+              <Text style={{ fontSize: moderateScale(14), fontWeight: '700', color: theme.text, flexShrink: 1 }} numberOfLines={1}>
+                #{ride.order_id}
+              </Text>
+              <View style={{
+                paddingHorizontal: scale(Spacing.two),
+                paddingVertical: verticalScale(Spacing.half),
+                borderRadius: moderateScale(999),
+                backgroundColor: theme.successSoft,
+              }}>
+                <Text style={{ fontSize: moderateScale(12), fontWeight: '700', color: theme.success, textTransform: 'capitalize' }}>
+                  {ride.driver_status}
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ paddingHorizontal: scale(Spacing.four), gap: verticalScale(Spacing.two), paddingBottom: verticalScale(Spacing.four) }}>
+              <Card style={{ gap: verticalScale(Spacing.three) }}>
+                <View>
+                  <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary, marginBottom: verticalScale(Spacing.half), textTransform: 'uppercase', letterSpacing: scale(1) }}>
+                    Pickup
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: scale(Spacing.two) }}>
+                    <View style={{
+                      width: scale(10),
+                      height: scale(10),
+                      borderRadius: moderateScale(5),
+                      backgroundColor: theme.success,
+                      marginTop: verticalScale(Spacing.one),
+                    }} />
+                    <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text, flexShrink: 1 }}>{decodedPickup}</Text>
+                  </View>
+                </View>
+
+                <View>
+                  <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary, marginBottom: verticalScale(Spacing.half), textTransform: 'uppercase', letterSpacing: scale(1) }}>
+                    Dropoff
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: scale(Spacing.two) }}>
+                    <View style={{
+                      width: scale(10),
+                      height: scale(10),
+                      borderRadius: moderateScale(5),
+                      backgroundColor: theme.brand,
+                      marginTop: verticalScale(Spacing.one),
+                    }} />
+                    <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text, flexShrink: 1 }}>{decodedDropoff}</Text>
+                  </View>
+                </View>
+              </Card>
+
+              <Card style={{ gap: verticalScale(Spacing.three) }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+                  <Ionicons name="person-outline" size={moderateScale(18)} color={theme.textSecondary} />
+                  <View style={{ flexShrink: 1 }}>
+                    <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>Customer</Text>
+                    <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>{ride.customer_name}</Text>
+                  </View>
+                </View>
+
+                {ride.customer_phone && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+                    <Ionicons name="call-outline" size={moderateScale(18)} color={theme.textSecondary} />
+                    <View style={{ flexShrink: 1 }}>
+                      <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>Phone</Text>
+                      <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>{ride.customer_phone}</Text>
+                    </View>
+                  </View>
+                )}
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+                  <Ionicons name="calendar-outline" size={moderateScale(18)} color={theme.textSecondary} />
+                  <View style={{ flexShrink: 1 }}>
+                    <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>Pickup Date</Text>
+                    <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>{formatDate(ride.pickup_date)}</Text>
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+                  <Ionicons name="time-outline" size={moderateScale(18)} color={theme.textSecondary} />
+                  <View style={{ flexShrink: 1 }}>
+                    <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>Pickup Time</Text>
+                    <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>{formatTime(ride.pickup_time)}</Text>
+                  </View>
+                </View>
+              </Card>
+
+              <Card style={{ gap: verticalScale(Spacing.two) }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary }}>Total Fare</Text>
+                  <Text style={{ fontSize: moderateScale(18), fontWeight: '800', color: theme.success }}>{formatCurrency(ride.total_fare)}</Text>
+                </View>
+              </Card>
+
+              <Pressable
+                onPress={onClose}
+                style={{
+                  paddingVertical: verticalScale(Spacing.three),
+                  borderRadius: moderateScale(14),
+                  backgroundColor: theme.brand,
+                  alignItems: 'center',
+                  marginTop: verticalScale(Spacing.two),
+                }}>
+                <Text style={{ color: theme.brandText, fontWeight: '700', fontSize: moderateScale(16) }}>Close</Text>
+              </Pressable>
+            </View>
+          </SafeAreaView>
         </View>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
