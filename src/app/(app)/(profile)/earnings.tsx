@@ -16,8 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Screen } from '@/components/ui/screen';
-import { Spacing } from '@/constants/theme';
+import { Spacing, BottomTabInset } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import {
@@ -530,17 +529,16 @@ export default function EarningsScreen() {
   const showBreakdown = period !== 'daily';
 
   return (
-    <Screen scroll={false}>
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
-        <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingTop: insets.top + verticalScale(Spacing.three),
-          paddingHorizontal: scale(Spacing.four),
-          paddingBottom: verticalScale(Spacing.three),
-          backgroundColor: theme.background,
-        }}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: insets.top + verticalScale(Spacing.three),
+        paddingHorizontal: scale(Spacing.four),
+        paddingBottom: verticalScale(Spacing.three),
+        backgroundColor: theme.background,
+      }}>
           <Pressable onPress={() => router.back()} style={{ padding: scale(Spacing.one) }}>
             <Ionicons name="arrow-back" size={moderateScale(24)} color={theme.text} />
           </Pressable>
@@ -552,7 +550,7 @@ export default function EarningsScreen() {
 
         <FlatList
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: scale(Spacing.four), paddingBottom: verticalScale(Spacing.six) }}
+          contentContainerStyle={{ paddingHorizontal: scale(Spacing.four), paddingBottom: verticalScale(Spacing.six + BottomTabInset + Spacing.three) }}
           ListHeaderComponent={
             <>
               <View style={{ gap: verticalScale(Spacing.two), marginBottom: verticalScale(Spacing.three) }}>
@@ -775,6 +773,5 @@ export default function EarningsScreen() {
           moderateScale={moderateScale}
         />
       </View>
-    </Screen>
   );
 }
