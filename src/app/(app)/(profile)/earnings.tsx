@@ -438,7 +438,7 @@ export default function EarningsScreen() {
   const insets = useSafeAreaInsets();
   const { scale, verticalScale, moderateScale } = useResponsive();
 
-  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [response, setResponse] = useState<EarningsData | null>(null);
