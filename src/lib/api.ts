@@ -261,29 +261,29 @@ export async function resetPassword(token: string, new_password: string): Promis
 /* Social auth (Google / Apple)                                        */
 /* ------------------------------------------------------------------ */
 
-export async function loginWithGoogle(idToken: string): Promise<LoginResponse> {
-  return request<LoginResponse>('/google-login', {
-    method: 'POST',
-    body: { id_token: idToken },
-    auth: false,
-  });
-}
+// export async function loginWithGoogle(idToken: string): Promise<LoginResponse> {
+//   return request<LoginResponse>('/google-login', {
+//     method: 'POST',
+//     body: { id_token: idToken },
+//     auth: false,
+//   });
+// }
 
-export interface AppleLoginPayload {
-  identity_token: string;
-  authorization_code?: string;
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-}
+// export interface AppleLoginPayload {
+//   identity_token: string;
+//   authorization_code?: string;
+//   email?: string;
+//   first_name?: string;
+//   last_name?: string;
+// }
 
-export async function loginWithApple(payload: AppleLoginPayload): Promise<LoginResponse> {
-  return request<LoginResponse>('/apple-login', {
-    method: 'POST',
-    body: payload,
-    auth: false,
-  });
-}
+// export async function loginWithApple(payload: AppleLoginPayload): Promise<LoginResponse> {
+//   return request<LoginResponse>('/apple-login', {
+//     method: 'POST',
+//     body: payload,
+//     auth: false,
+//   });
+// }
 
 /* ------------------------------------------------------------------ */
 /* Dashboard & bookings                                                 */
@@ -431,7 +431,10 @@ export async function updateProfile(payload: {
 /* Earnings                                                            */
 /* ------------------------------------------------------------------ */
 
-export type EarningsPeriod = 'daily' | 'weekly' | 'monthly';
+export interface EarningsSummary {
+  total_amount: number;
+  total_rides: number;
+}
 
 export interface EarningsBreakdown {
   date: string;
@@ -446,38 +449,44 @@ export interface EarningsRide {
   dropoff_location: string;
   pickup_date: string;
   pickup_time: string;
-  completed_at: string;
+  vehicleType: string;
   total_fare: number;
-  customer?: Customer;
+  driver_status: string;
+  customer_name: string;
+  customer_phone: string;
 }
 
-export interface EarningsResponse {
-  period: EarningsPeriod;
-  date: string;
-  summary: {
-    total_earnings: number;
-    total_rides: number;
-  };
-  breakdown: EarningsBreakdown[];
-  rides: EarningsRide[];
-  pagination: {
-    current_page: number;
-    total: number;
-    last_page: number;
-  };
+export interface EarningsRidesData {
+  current_page: number;
+  total: number;
+  last_page: number;
+  items: EarningsRide[];
+}
+
+export interface EarningsData {
+  period: 'daily' | 'weekly' | 'monthly';
+  range: { start: string; end: string };
+  summary: EarningsSummary;
+  breakdown: EarningsBreakdown[] | null;
+  rides: EarningsRidesData;
+}
+
+export interface ApiResponse<T> {
+  status: string;
+  data: T;
 }
 
 export async function getDriverEarningsReport(
-  period: EarningsPeriod,
+  period: 'daily' | 'weekly' | 'monthly',
   date: string,
   page: number = 1,
   limit: number = 10
-): Promise<EarningsResponse> {
+): Promise<ApiResponse<EarningsData>> {
   const search = new URLSearchParams();
   search.set('period', period);
   search.set('date', date);
   search.set('page', String(page));
   search.set('limit', String(limit));
   const query = search.toString();
-  return request<EarningsResponse>(`/earnings${query ? `?${query}` : ''}`);
+  return request<ApiResponse<EarningsData>>(`/earnings${query ? `?${query}` : ''}`);
 }
