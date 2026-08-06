@@ -448,6 +448,11 @@ export default function EarningsScreen() {
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedRide, setSelectedRide] = useState<EarningsRide | null>(null);
+  const [hideEarnings, setHideEarnings] = useState(true);
+
+  const toggleHideEarnings = useCallback(() => {
+    setHideEarnings((prev) => !prev);
+  }, []);
 
   const handleDateChange = (event: any, selected?: Date) => {
     setShowDatePicker(false);
@@ -645,10 +650,13 @@ export default function EarningsScreen() {
                 </View>
               ) : response ? (
                 <>
-                  <Card style={{ marginBottom: verticalScale(Spacing.three), gap: verticalScale(Spacing.two) }}>
+                  <Card style={{ marginBottom: verticalScale(Spacing.three), gap: verticalScale(Spacing.two), position: 'relative' }}>
                     <Text style={{ fontSize: moderateScale(15), fontWeight: '700', color: theme.text }}>
                       {period === 'daily' ? "Today's" : period === 'weekly' ? "This Week's" : "This Month's"} Summary
                     </Text>
+                    <Pressable onPress={toggleHideEarnings} hitSlop={8} style={{ position: 'absolute', top: verticalScale(Spacing.one), right: scale(Spacing.one), zIndex: 1 }}>
+                      <Ionicons name={hideEarnings ? 'eye-off-outline' : 'eye-outline'} size={moderateScale(20)} color={theme.textSecondary} />
+                    </Pressable>
                     <View style={{
                       flexDirection: 'row',
                       gap: scale(Spacing.three),
@@ -676,7 +684,7 @@ export default function EarningsScreen() {
                           Total Earnings
                         </Text>
                         <Text style={{ fontSize: moderateScale(20), fontWeight: '800', color: theme.brand }} numberOfLines={1}>
-                          {formatCurrency(totalAmount)}
+                          {hideEarnings ? '******' : formatCurrency(totalAmount)}
                         </Text>
                       </View>
 
@@ -703,7 +711,7 @@ export default function EarningsScreen() {
                           Completed Rides
                         </Text>
                         <Text style={{ fontSize: moderateScale(20), fontWeight: '800', color: theme.text }} numberOfLines={1}>
-                          {totalRides}
+                          {hideEarnings ? '**' : totalRides}
                         </Text>
                       </View>
                     </View>
