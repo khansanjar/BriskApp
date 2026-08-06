@@ -1,5 +1,6 @@
 // src/app/(app)/(profile)/earnings.tsx
 import Ionicons from '@react-native-vector-icons/ionicons';
+import DateTimePickerExpo from '@expo/ui/community/datetime-picker';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
@@ -8,7 +9,7 @@ import {
     RefreshControl,
     ScrollView,
     Text,
-    View
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -18,33 +19,151 @@ import { Screen } from '@/components/ui/screen';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
-import { getDriverEarningsReport, type EarningsPeriod, type EarningsResponse } from '@/lib/api';
+import {
+    getDriverEarningsReport,
+    type ApiResponse,
+    type EarningsData,
+} from '@/lib/api';
 import { formatCurrency, formatDate, formatTime } from '@/lib/format';
 
-function getTodayDate(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-const PERIODS: { key: EarningsPeriod; label: string }[] = [
+const PERIODS: { key: 'daily' | 'weekly' | 'monthly'; label: string }[] = [
   { key: 'daily', label: 'Daily' },
   { key: 'weekly', label: 'Weekly' },
   { key: 'monthly', label: 'Monthly' },
 ];
 
+function BreakdownChart({ breakdown, theme, scale, verticalScale, moderateScale }: {
+  breakdown: { date: string; amount: number; rides_count: number }[];
+  theme: ReturnType<typeof useTheme>;
+  scale: (n: number) => number;
+  verticalScale: (n: number) => number;
+  moderateScale: (n: number) => number;
+}) {
+  if (breakdown.length === 0) {
+    return (
+      <View style={{ alignItems: 'center', paddingVertical: verticalScale(Spacing.four) }}>
+        <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary }}>No data available for this period</Text>
+      </View>
+    );
+  }
+  const maxAmount = Math.max(...breakdown.map((b) => b.amount), 1);
+  return (
+    <View style={{ gap: verticalScale(Spacing.two) }}>
+      {breakdown.map((item) => {
+        const pct = Math.max((item.amount / maxAmount) * 100, 2);
+        return (
+          <View key={item.date} style={{ gap: verticalScale(Spacing.half) }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary, flex: 1 }} numberOfLines={1}>
+                {formatDate(item.date)}
+              </Text>
+              <Text style={{ fontSize: moderateScale(12), fontWeight: '700', color: theme.text, marginLeft: scale(Spacing.two) }}>
+                {item.rides_count} {item.rides_count === 1 ? 'ride' : 'rides'}
+              </Text>
+              <Text style={{ fontSize: moderateScale(13), fontWeight: '800', color: theme.brand, marginLeft: scale(Spacing.two) }}>
+                {formatCurrency(item.amount)}
+              </Text>
+            </View>
+            <View style={{ height: verticalScale(10), borderRadius: moderateScale(5), backgroundColor: theme.backgroundElement, overflow: 'hidden' }}>
+              <View style={{ width: `${pct}%`, height: '100%', borderRadius: moderateScale(5), backgroundColor: theme.brand }} />
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function RideItem({ ride, theme, scale, verticalScale, moderateScale }: {
+  ride: {
+    booking_id: number;
+    order_id: string;
+    pickup_location: string;
+    dropoff_location: string;
+    pickup_date: string;
+    pickup_time: string;
+    vehicleType: string;
+    total_fare: number;
+    driver_status: string;
+    customer_name: string;
+    customer_phone: string;
+  };
+  theme: ReturnType<typeof useTheme>;
+  scale: (n: number) => number;
+  verticalScale: (n: number) => number;
+  moderateScale: (n: number) => number;
+}) {
+  return (
+    <Pressable
+      onPress={() => router.push(`/(app)/(bookings)/booking/${ride.booking_id}`)}
+      style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
+      <View style={{
+        paddingVertical: verticalScale(Spacing.two),
+        borderBottomWidth: scale(1),
+        borderBottomColor: theme.border,
+        gap: verticalScale(Spacing.one),
+      }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <View style={{ flex: 1, marginRight: scale(Spacing.two) }}>
+            <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }} numberOfLines={1}>
+              {ride.pickup_location}
+            </Text>
+            <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }} numberOfLines={1}>
+              to {ride.dropoff_location}
+            </Text>
+          </View>
+          <Text style={{ fontSize: moderateScale(16), fontWeight: '800', color: theme.text }}>
+            {formatCurrency(ride.total_fare)}
+          </Text>
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: scale(Spacing.two) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.three) }}>
+            <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>
+              {formatDate(ride.pickup_date)} • {formatTime(ride.pickup_time)}
+            </Text>
+            {ride.vehicleType ? (
+              <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary, textTransform: 'capitalize' }}>
+                {ride.vehicleType}
+              </Text>
+            ) : null}
+          </View>
+          <View style={{
+            paddingHorizontal: scale(Spacing.two),
+            paddingVertical: verticalScale(Spacing.half),
+            borderRadius: moderateScale(999),
+            backgroundColor: theme.successSoft,
+          }}>
+            <Text style={{ fontSize: moderateScale(11), fontWeight: '700', color: theme.success, textTransform: 'capitalize' }}>
+              {ride.driver_status}
+            </Text>
+          </View>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.one) }}>
+          <Ionicons name="person-outline" size={moderateScale(12)} color={theme.textSecondary} />
+          <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }} numberOfLines={1}>
+            {ride.customer_name} {ride.customer_phone ? `• ${ride.customer_phone}` : ''}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 export default function EarningsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { isLandscape, scale, verticalScale, moderateScale } = useResponsive();
-  
-  const [period, setPeriod] = useState<EarningsPeriod>('daily');
-  const [date, setDate] = useState(getTodayDate());
-  const [data, setData] = useState<EarningsResponse | null>(null);
+
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [response, setResponse] = useState<ApiResponse<EarningsData> | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  const dateString = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
 
   const loadEarnings = useCallback(async (pageNum: number = 1) => {
     try {
@@ -54,17 +173,26 @@ export default function EarningsScreen() {
         setLoadingMore(true);
       }
       setError(null);
-      
-      const response = await getDriverEarningsReport(period, date, pageNum, 10);
-      
+
+      const res = await getDriverEarningsReport(period, dateString, pageNum, 10);
+
       if (pageNum === 1) {
-        setData(response);
+        setResponse(res);
         setPage(1);
       } else {
-        setData(prev => prev ? {
-          ...response,
-          rides: [...prev.rides, ...response.rides],
-        } : response);
+        setResponse((prev) => {
+          if (!prev) return res;
+          return {
+            ...res,
+            data: {
+              ...res.data,
+              rides: {
+                ...res.data.rides,
+                items: [...prev.data.rides.items, ...res.data.rides.items],
+              },
+            },
+          };
+        });
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load earnings data.');
@@ -72,7 +200,7 @@ export default function EarningsScreen() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [period, date]);
+  }, [period, dateString]);
 
   useFocusEffect(
     useCallback(() => {
@@ -86,18 +214,25 @@ export default function EarningsScreen() {
     setRefreshing(false);
   }, [loadEarnings]);
 
-  const handlePeriodChange = useCallback((newPeriod: EarningsPeriod) => {
+  const handlePeriodChange = useCallback((newPeriod: 'daily' | 'weekly' | 'monthly') => {
     setPeriod(newPeriod);
-    setPage(1);
   }, []);
 
   const loadMore = useCallback(() => {
-    if (!data || loadingMore || page >= data.pagination.last_page) return;
+    if (!response || loadingMore) return;
+    const lastPage = response.data.rides.last_page;
+    if (page >= lastPage) return;
     const nextPage = page + 1;
     setPage(nextPage);
     loadEarnings(nextPage);
-  }, [data, loadingMore, page, loadEarnings]);
+  }, [response, loadingMore, page, loadEarnings]);
 
+  const earningsData = response?.data;
+  const totalAmount = earningsData?.summary?.total_amount ?? 0;
+  const totalRides = earningsData?.summary?.total_rides ?? 0;
+  const breakdownList = earningsData?.breakdown ?? [];
+  const ridesList = earningsData?.rides?.items ?? [];
+  const lastPage = earningsData?.rides?.last_page ?? 1;
   const showBreakdown = period !== 'daily';
 
   return (
@@ -141,42 +276,68 @@ export default function EarningsScreen() {
         }}
         scrollEventThrottle={400}
       >
-        {/* Period Filter */}
-        <View style={{
-          flexDirection: 'row',
-          borderRadius: moderateScale(14),
-          padding: scale(Spacing.half),
-          gap: scale(Spacing.half),
-          backgroundColor: theme.backgroundElement,
-          marginBottom: verticalScale(Spacing.three),
-        }}>
-          {PERIODS.map((p) => {
-            const active = period === p.key;
-            return (
-              <Pressable
-                key={p.key}
-                onPress={() => handlePeriodChange(p.key)}
-                style={{
-                  flex: 1,
-                  paddingVertical: verticalScale(Spacing.two),
-                  borderRadius: moderateScale(10),
-                  alignItems: 'center',
-                  backgroundColor: active ? theme.brand : undefined,
-                }}>
-                <Text
+        {/* Period Filter + Date Picker */}
+        <View style={{ gap: verticalScale(Spacing.two), marginBottom: verticalScale(Spacing.three) }}>
+          <View style={{
+            flexDirection: 'row',
+            borderRadius: moderateScale(14),
+            padding: scale(Spacing.half),
+            gap: scale(Spacing.half),
+            backgroundColor: theme.backgroundElement,
+          }}>
+            {PERIODS.map((p) => {
+              const active = period === p.key;
+              return (
+                <Pressable
+                  key={p.key}
+                  onPress={() => handlePeriodChange(p.key)}
                   style={{
-                    color: active ? theme.brandText : theme.textSecondary,
-                    fontWeight: '700',
-                    fontSize: moderateScale(13),
+                    flex: 1,
+                    paddingVertical: verticalScale(Spacing.two),
+                    borderRadius: moderateScale(10),
+                    alignItems: 'center',
+                    backgroundColor: active ? theme.brand : undefined,
                   }}>
-                  {p.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+                  <Text
+                    style={{
+                      color: active ? theme.brandText : theme.textSecondary,
+                      fontWeight: '700',
+                      fontSize: moderateScale(13),
+                    }}>
+                    {p.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={{
+            borderRadius: moderateScale(14),
+            padding: scale(Spacing.two),
+            backgroundColor: theme.backgroundElement,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+              <Ionicons name="calendar-outline" size={scale(18)} color={theme.textSecondary} />
+              <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>
+                {formatDate(dateString)}
+              </Text>
+            </View>
+            <DateTimePickerExpo
+              value={selectedDate}
+              mode="date"
+              onChange={(_, date) => {
+                if (date) setSelectedDate(date);
+              }}
+              display="default"
+              accentColor={theme.brand}
+            />
+          </View>
         </View>
 
-        {loading && !data ? (
+        {loading && !response ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: verticalScale(Spacing.six) }}>
             <ActivityIndicator size="large" color={theme.brand} />
           </View>
@@ -201,9 +362,9 @@ export default function EarningsScreen() {
               }
             />
           </View>
-        ) : data ? (
+        ) : response ? (
           <>
-            {/* Summary Card */}
+            {/* PART 1: Summary + Rides */}
             <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
               <Text style={{ fontSize: moderateScale(15), fontWeight: '700', marginBottom: verticalScale(Spacing.three), color: theme.text }}>
                 {period === 'daily' ? 'Today\'s' : period === 'weekly' ? 'This Week\'s' : 'This Month\'s'} Summary
@@ -217,7 +378,7 @@ export default function EarningsScreen() {
                     Total Earnings
                   </Text>
                   <Text style={{ fontSize: moderateScale(28), fontWeight: '800', color: theme.brand }}>
-                    {formatCurrency(data.summary.total_earnings)}
+                    {formatCurrency(totalAmount)}
                   </Text>
                 </View>
                 <View style={{ flex: 1 }}>
@@ -225,51 +386,18 @@ export default function EarningsScreen() {
                     Completed Rides
                   </Text>
                   <Text style={{ fontSize: moderateScale(28), fontWeight: '800', color: theme.text }}>
-                    {data.summary.total_rides}
+                    {totalRides}
                   </Text>
                 </View>
               </View>
             </Card>
-
-            {/* Daily Breakdown (for weekly/monthly) */}
-            {showBreakdown && data.breakdown.length > 0 && (
-              <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
-                <Text style={{ fontSize: moderateScale(15), fontWeight: '700', marginBottom: verticalScale(Spacing.three), color: theme.text }}>
-                  Daily Breakdown
-                </Text>
-                {data.breakdown.map((item, index) => (
-                  <View
-                    key={item.date}
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingVertical: verticalScale(Spacing.two),
-                      borderBottomWidth: index < data.breakdown.length - 1 ? scale(1) : 0,
-                      borderBottomColor: theme.border,
-                    }}>
-                    <View>
-                      <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>
-                        {formatDate(item.date)}
-                      </Text>
-                      <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>
-                        {item.rides_count} ride{item.rides_count !== 1 ? 's' : ''}
-                      </Text>
-                    </View>
-                    <Text style={{ fontSize: moderateScale(16), fontWeight: '700', color: theme.brand }}>
-                      {formatCurrency(item.amount)}
-                    </Text>
-                  </View>
-                ))}
-              </Card>
-            )}
 
             {/* Completed Rides List */}
             <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
               <Text style={{ fontSize: moderateScale(15), fontWeight: '700', marginBottom: verticalScale(Spacing.three), color: theme.text }}>
                 Completed Rides
               </Text>
-              {data.rides.length === 0 ? (
+              {ridesList.length === 0 ? (
                 <EmptyState
                   icon="car-outline"
                   title="No rides yet"
@@ -277,48 +405,25 @@ export default function EarningsScreen() {
                 />
               ) : (
                 <>
-                  {data.rides.map((ride, index) => (
-                    <View
+                  {ridesList.map((ride) => (
+                    <RideItem
                       key={ride.booking_id}
-                      style={{
-                        paddingVertical: verticalScale(Spacing.two),
-                        borderBottomWidth: index < data.rides.length - 1 ? scale(1) : 0,
-                        borderBottomColor: theme.border,
-                      }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: verticalScale(Spacing.one) }}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }} numberOfLines={1}>
-                            {ride.order_id}
-                          </Text>
-                          <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }} numberOfLines={1}>
-                            {ride.pickup_location}
-                          </Text>
-                        </View>
-                        <Text style={{ fontSize: moderateScale(16), fontWeight: '700', color: theme.brand }}>
-                          {formatCurrency(ride.total_fare)}
-                        </Text>
-                      </View>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>
-                          {formatDate(ride.completed_at)} • {formatTime(ride.completed_at)}
-                        </Text>
-                        {ride.customer && (
-                          <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>
-                            {ride.customer.name}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
+                      ride={ride}
+                      theme={theme}
+                      scale={scale}
+                      verticalScale={verticalScale}
+                      moderateScale={moderateScale}
+                    />
                   ))}
                   {loadingMore && (
                     <View style={{ paddingVertical: verticalScale(Spacing.three), alignItems: 'center' }}>
                       <ActivityIndicator size="small" color={theme.brand} />
                     </View>
                   )}
-                  {page >= data.pagination.last_page && data.rides.length > 0 && (
-                    <Text style={{ 
-                      textAlign: 'center', 
-                      fontSize: moderateScale(12), 
+                  {page >= lastPage && ridesList.length > 0 && (
+                    <Text style={{
+                      textAlign: 'center',
+                      fontSize: moderateScale(12),
                       color: theme.textSecondary,
                       paddingVertical: verticalScale(Spacing.two),
                     }}>
@@ -326,6 +431,29 @@ export default function EarningsScreen() {
                     </Text>
                   )}
                 </>
+              )}
+            </Card>
+
+            {/* PART 2: Breakdown Chart */}
+            <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
+              <Text style={{ fontSize: moderateScale(15), fontWeight: '700', marginBottom: verticalScale(Spacing.three), color: theme.text }}>
+                {period === 'weekly' ? 'Weekly' : period === 'monthly' ? 'Monthly' : 'Daily'} Breakdown
+              </Text>
+              {!showBreakdown ? (
+                <View style={{ alignItems: 'center', paddingVertical: verticalScale(Spacing.four), gap: verticalScale(Spacing.two) }}>
+                  <Ionicons name="calendar-outline" size={moderateScale(32)} color={theme.textSecondary} />
+                  <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary, textAlign: 'center' }}>
+                    Breakdown is not available for daily view. Select Weekly or Monthly to see the chart.
+                  </Text>
+                </View>
+              ) : (
+                <BreakdownChart
+                  breakdown={breakdownList}
+                  theme={theme}
+                  scale={scale}
+                  verticalScale={verticalScale}
+                  moderateScale={moderateScale}
+                />
               )}
             </Card>
           </>
