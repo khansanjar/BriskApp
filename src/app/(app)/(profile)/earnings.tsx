@@ -156,12 +156,24 @@ export default function EarningsScreen() {
 
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [response, setResponse] = useState<ApiResponse<EarningsData> | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  const handleDateChange = (event: any, selected?: Date) => {
+    setShowDatePicker(false);
+    if (selected) {
+      setSelectedDate(selected);
+    }
+  };
+
+  const handleDateDismiss = () => {
+    setShowDatePicker(false);
+  };
 
   const dateString = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
 
@@ -311,30 +323,35 @@ export default function EarningsScreen() {
             })}
           </View>
 
-          <View style={{
-            borderRadius: moderateScale(14),
-            padding: scale(Spacing.two),
-            backgroundColor: theme.backgroundElement,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
+          <Pressable
+            onPress={() => setShowDatePicker(true)}
+            style={{
+              borderRadius: moderateScale(14),
+              padding: scale(Spacing.two),
+              backgroundColor: theme.backgroundElement,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
               <Ionicons name="calendar-outline" size={scale(18)} color={theme.textSecondary} />
               <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }}>
                 {formatDate(dateString)}
               </Text>
             </View>
+            <Ionicons name="chevron-down-outline" size={scale(18)} color={theme.textSecondary} />
+          </Pressable>
+          {showDatePicker && (
             <DateTimePickerExpo
               value={selectedDate}
               mode="date"
-              onChange={(_, date) => {
-                if (date) setSelectedDate(date);
-              }}
+              presentation="dialog"
+              onChange={handleDateChange}
+              onDismiss={handleDateDismiss}
               display="default"
               accentColor={theme.brand}
             />
-          </View>
+          )}
         </View>
 
         {loading && !response ? (
