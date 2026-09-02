@@ -20,7 +20,7 @@ import { ScreenHorizontalMargin, Spacing, TAB_BAR_BOTTOM_OFFSET, TAB_BAR_HEIGHT 
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { type Booking, type DriverStatus } from '@/lib/api';
-import { openNavigationForRide } from '@/lib/navigation';
+import { openNavigationForRide, type NavigationResult } from '@/lib/navigation';
 
 export interface ActiveRideScreenProps {
   booking: Booking;
@@ -279,18 +279,20 @@ export function ActiveRideScreen({
       ? pickupLocation
       : dropoffLocation;
 
-    const success = await openNavigationForRide(
+    const result: NavigationResult = await openNavigationForRide(
       currentStatus,
       { latitude: pickupLocation.latitude, longitude: pickupLocation.longitude, address: pickupLocation.address },
       { latitude: dropoffLocation.latitude, longitude: dropoffLocation.longitude, address: dropoffLocation.address }
     );
 
-    if (!success) {
-      Alert.alert(
-        'Navigation Error',
-        'Unable to open Google Maps. Please ensure it is installed or try again.',
-        [{ text: 'OK', style: 'default' }]
-      );
+    if (result.opened === 'none') {
+      const message =
+        result.reason === 'invalid_coords'
+          ? 'Coordinates are still loading. Please wait a moment and try again.'
+          : result.reason === 'no_destination'
+            ? 'No navigation destination available for this ride status.'
+            : result.message ?? 'Unable to open any maps application. Please try again.';
+      Alert.alert('Navigation Error', message, [{ text: 'OK', style: 'default' }]);
     }
   }, [currentStatus, pickupLocation, dropoffLocation]);
 

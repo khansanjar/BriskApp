@@ -22,7 +22,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { DriverStatusMeta, ScreenHorizontalMargin, Spacing, TAB_BAR_BOTTOM_OFFSET, TAB_BAR_HEIGHT } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
-import { getDashboard, type Booking, type DashboardData, type User } from '@/lib/api';
+import { getDashboard, type DashboardData, type User } from '@/lib/api';
 import { formatCurrency } from '@/lib/format';
 import { getUser } from '@/lib/storage';
 

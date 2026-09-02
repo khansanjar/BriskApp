@@ -20,6 +20,7 @@ module.exports = {
       bundleIdentifier: "com.brisktransfers.driver",
       deploymentTarget: "16.4",
       infoPlist: {
+        LSApplicationQueriesSchemes: ['comgooglemaps', 'googlemaps', 'maps'],
         UIBackgroundModes: ["location", "fetch"],
         NSLocationWhenInUseUsageDescription:
           "Your location is used to provide live tracking and accurate pick-up points for customers while you are active on the app.",

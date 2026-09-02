@@ -10,6 +10,7 @@ export interface LatLng {
 export interface BookingCoordinates {
   pickup: LatLng | null;
   dropoff: LatLng | null;
+  isReady: boolean;
 }
 
 const geocodeCache = new Map<string, LatLng>();
@@ -40,7 +41,7 @@ export function resolveBookingCoordinates(booking: {
     ? ({ latitude: booking.dropoff_latitude!, longitude: booking.dropoff_longitude! } as LatLng)
     : null;
 
-  return { pickup, dropoff };
+  return { pickup, dropoff, isReady: Boolean(pickup && dropoff) };
 }
 
 export async function geocodeAddress(
@@ -89,7 +90,7 @@ export function useBookingCoordinates(
     driverOperatingRegion?: string | null;
   }
 ): BookingCoordinates {
-  const [coords, setCoords] = useState<BookingCoordinates>({ pickup: null, dropoff: null });
+  const [coords, setCoords] = useState<BookingCoordinates>({ pickup: null, dropoff: null, isReady: false });
   const bookingRef = useRef(booking);
   const optionsRef = useRef(options);
 
@@ -101,7 +102,7 @@ export function useBookingCoordinates(
 
   useEffect(() => {
     if (!booking) {
-      setCoords({ pickup: null, dropoff: null });
+      setCoords({ pickup: null, dropoff: null, isReady: false });
       return;
     }
 
@@ -119,7 +120,7 @@ export function useBookingCoordinates(
           optionsRef.current?.driverOperatingRegion
         ).then((c) => {
           if (c && bookingRef.current?.booking_id === booking.booking_id) {
-            setCoords((prev) => ({ ...prev, pickup: c }));
+            setCoords((prev) => ({ ...prev, pickup: c, isReady: Boolean(c && prev.dropoff) }));
           }
         })
       );
@@ -134,7 +135,7 @@ export function useBookingCoordinates(
           optionsRef.current?.driverOperatingRegion
         ).then((c) => {
           if (c && bookingRef.current?.booking_id === booking.booking_id) {
-            setCoords((prev) => ({ ...prev, dropoff: c }));
+            setCoords((prev) => ({ ...prev, dropoff: c, isReady: Boolean(prev.pickup && c) }));
           }
         })
       );

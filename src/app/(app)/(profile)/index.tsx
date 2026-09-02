@@ -73,16 +73,16 @@ export default function ProfileScreen() {
   return (
     <Screen>
       <View style={{
+        width: '100%',
         alignItems: isLandscape ? 'flex-start' : 'center',
         gap: verticalScale(Spacing.two),
-        marginBottom: isLandscape ? verticalScale(Spacing.three) : verticalScale(Spacing.four),
+        marginBottom: verticalScale(Spacing.three),
         flexDirection: isLandscape ? 'row' : 'column',
       }}>
         <View style={{
           padding: scale(Spacing.half),
           borderRadius: moderateScale(999),
           borderWidth: 1,
-          marginBottom: verticalScale(Spacing.one),
           borderColor: theme.border,
           backgroundColor: theme.brandSoft,
         }}>
@@ -90,7 +90,7 @@ export default function ProfileScreen() {
             firstName={user?.user_fname}
             lastName={user?.user_lname}
             photo={user?.profile_photo ?? null}
-            size={isLandscape ? 56 : 84}
+            size={moderateScale(isLandscape ? 56 : 84)}
             fallback="icon"
           />
         </View>
@@ -102,7 +102,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
+      <Card style={{ width: '100%', marginBottom: verticalScale(Spacing.three) }}>
         {editing ? (
           <>
             <TextField label="First name" value={fname} onChangeText={setFname} />
@@ -139,7 +139,7 @@ export default function ProfileScreen() {
         )}
       </Card>
 
-      <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
+      <Card style={{ width: '100%', marginBottom: verticalScale(Spacing.three) }}>
         <Pressable
           onPress={() => router.push('/(app)/(profile)/earnings')}
           style={({ pressed }) => [
@@ -171,7 +171,7 @@ export default function ProfileScreen() {
         </Pressable>
       </Card>
 
-      <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
+      <Card style={{ width: '100%', marginBottom: verticalScale(Spacing.three) }}>
         <Text style={{ fontSize: moderateScale(15), fontWeight: '700', marginBottom: verticalScale(Spacing.three), color: theme.text }}>App Info</Text>
         <View style={{
           flexDirection: 'row',
@@ -197,7 +197,7 @@ export default function ProfileScreen() {
         </View>
       </Card>
 
-      <Card style={{ marginBottom: verticalScale(Spacing.three) }}>
+      <Card style={{ width: '100%', marginBottom: verticalScale(Spacing.three) }}>
         <Text style={{ fontSize: moderateScale(15), fontWeight: '700', marginBottom: verticalScale(Spacing.three), color: theme.text }}>Appearance</Text>
         <View style={{
           flexDirection: 'row',
@@ -245,6 +245,7 @@ export default function ProfileScreen() {
         onPress={() => confirmLogout(signOut)}
         style={({ pressed }) => [
           {
+            width: '100%',
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
@@ -253,6 +254,7 @@ export default function ProfileScreen() {
             borderRadius: moderateScale(14),
             borderWidth: scale(1.5),
             borderColor: theme.danger,
+            marginBottom: verticalScale(Spacing.three),
           },
           pressed && { backgroundColor: theme.dangerSoft },
         ]}>
