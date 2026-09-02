@@ -1,5 +1,5 @@
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { memo, type ComponentProps } from 'react';
+import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/card';
@@ -11,24 +11,35 @@ import type { Booking } from '@/lib/api';
 import { isRideMissed } from '@/lib/booking-status';
 import { formatCurrency, formatDate, formatTime } from '@/lib/format';
 
-type IoniconName = ComponentProps<typeof Ionicons>['name'];
-
-type MetaProps = {
-  icon: IoniconName;
+function MetaIcon({
+  icon,
+  text,
+  theme,
+  scale,
+  moderateScale,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
   text: string;
   theme: ReturnType<typeof useTheme>;
-};
-
-function Meta({ icon, text, theme }: MetaProps) {
+  scale: (n: number) => number;
+  moderateScale: (n: number, factor?: number) => number;
+}) {
   return (
-    <View style={styles.meta}>
-      <Ionicons name={icon} size={14} color={theme.textSecondary} />
-      <Text style={[styles.metaText, { color: theme.textSecondary, flexShrink: 1 }]} numberOfLines={1}>{text}</Text>
+    <View style={styles.metaItem}>
+      <Ionicons name={icon} size={moderateScale(14)} color={theme.textSecondary} />
+      <Text
+        style={[
+          styles.metaText,
+          { color: theme.textSecondary, fontSize: moderateScale(12) },
+        ]}
+        numberOfLines={1}>
+        {text}
+      </Text>
     </View>
   );
 }
 
-const MemoizedMeta = memo(Meta);
+const MemoizedMeta = memo(MetaIcon);
 
 export const BookingCard = memo(function BookingCard({
   booking,
@@ -38,51 +49,133 @@ export const BookingCard = memo(function BookingCard({
   onPress?: () => void;
 }) {
   const theme = useTheme();
-  const { isLandscape } = useResponsive();
+  const { scale, verticalScale, moderateScale } = useResponsive();
+
+  const missed = isRideMissed(booking);
+  const badgeStatus = missed ? 'missed' : booking.driver_status;
+
+  const pax = (booking as { pax_count?: number }).pax_count;
+  const bags = (booking as { luggage_count?: number }).luggage_count;
+  const childSeats = (booking as { child_seats?: number }).child_seats;
+  const flightNo = (booking as { flight_number?: string }).flight_number;
+
   return (
     <Pressable onPress={onPress} style={({ pressed }) => (pressed ? styles.pressed : null)}>
       <Card>
-        <View style={[styles.header, isLandscape && styles.headerLandscape]}>
-          <View style={styles.routeWrap}>
-            <View style={styles.routePoint}>
-              <View style={[styles.pin, { backgroundColor: theme.brand }]} />
-              <Text style={[styles.location, { color: theme.text }]} numberOfLines={1}>
-                {booking.pickup_location}
-              </Text>
-            </View>
-            <View style={styles.routeLine} />
-            <View style={styles.routePoint}>
-              <View style={[styles.pin, { backgroundColor: theme.danger }]} />
-              <Text style={[styles.location, { color: theme.text }]} numberOfLines={1}>
-                {booking.dropoff_location}
-              </Text>
-            </View>
+        {/* 1. Top Row: Status badge (left) + Driver payout (right) */}
+        <View style={[styles.topRow, { marginBottom: verticalScale(Spacing.two) }]}>
+          <StatusBadge status={badgeStatus} />
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text
+              style={{
+                fontSize: moderateScale(11),
+                fontWeight: '600',
+                color: theme.textSecondary,
+              }}>
+              You get
+            </Text>
+            <Text
+              style={{
+                fontSize: moderateScale(16),
+                fontWeight: '800',
+                color: theme.text,
+              }}
+              numberOfLines={1}>
+              {formatCurrency(booking.total_fare)}
+            </Text>
           </View>
-          <StatusBadge status={isRideMissed(booking) ? 'missed' : booking.driver_status} />
         </View>
 
-        <View style={[styles.metaRow, isLandscape && styles.metaRowLandscape]}>
-          <MemoizedMeta icon="calendar-outline" text={formatDate(booking.pickup_date)} theme={theme} />
-          <MemoizedMeta icon="time-outline" text={formatTime(booking.pickup_time)} theme={theme} />
-          {booking.vehicle_type ? (
-            <MemoizedMeta icon="car-outline" text={booking.vehicle_type} theme={theme} />
+        {/* 2. Date & Time Row */}
+        <Text
+          style={{
+            fontSize: moderateScale(15),
+            fontWeight: '700',
+            color: theme.text,
+            marginBottom: verticalScale(Spacing.two),
+          }}
+          numberOfLines={1}>
+          {formatDate(booking.pickup_date)} · {formatTime(booking.pickup_time)}
+        </Text>
+
+        {/* 3. Ride Meta Indicators Row */}
+        <View
+          style={[
+            styles.metaRow,
+            {
+              gap: scale(Spacing.three),
+              marginBottom: verticalScale(Spacing.three),
+            },
+          ]}>
+          {typeof pax === 'number' ? (
+            <MemoizedMeta
+              icon="people-outline"
+              text={`${pax} Pax`}
+              theme={theme}
+              scale={scale}
+              moderateScale={moderateScale}
+            />
+          ) : null}
+          {typeof bags === 'number' ? (
+            <MemoizedMeta
+              icon="briefcase-outline"
+              text={`${bags} Bags`}
+              theme={theme}
+              scale={scale}
+              moderateScale={moderateScale}
+            />
+          ) : null}
+          {typeof childSeats === 'number' && childSeats > 0 ? (
+            <MemoizedMeta
+              icon="person-add-outline"
+              text={`${childSeats} Seats`}
+              theme={theme}
+              scale={scale}
+              moderateScale={moderateScale}
+            />
+          ) : null}
+          {flightNo ? (
+            <MemoizedMeta
+              icon="airplane-outline"
+              text={`Flight ${flightNo}`}
+              theme={theme}
+              scale={scale}
+              moderateScale={moderateScale}
+            />
           ) : null}
         </View>
 
-        <View style={[styles.footer, { borderTopColor: theme.border }]}>
-          <View style={styles.customer}>
-            <Text style={[styles.customerName, { color: theme.text }]} numberOfLines={1}>
-              {booking.customer?.name ?? 'Customer'}
+        {/* 4. Route Section: Vertical Timeline */}
+        <View style={[styles.routeWrap, { gap: verticalScale(Spacing.two) }]}>
+          <View style={styles.routePoint}>
+            <View style={[styles.dot, { backgroundColor: theme.brand }]} />
+            <Text
+              style={[styles.location, { color: theme.text, fontSize: moderateScale(14) }]}
+              numberOfLines={1}>
+              {booking.pickup_location}
             </Text>
-            {booking.customer?.phone ? (
-              <Text style={[styles.customerPhone, { color: theme.textSecondary }]} numberOfLines={1}>
-                {booking.customer.phone}
-              </Text>
-            ) : null}
           </View>
-          <Text style={[styles.fare, { color: theme.text }]}>
-            {formatCurrency(booking.total_fare)}
-          </Text>
+
+          <View style={[styles.routeLine, { marginLeft: scale(Spacing.one) }]} />
+
+          <View style={styles.routePoint}>
+            <View
+              style={[
+                styles.pin,
+                {
+                  backgroundColor: theme.danger,
+                  width: scale(Spacing.two + Spacing.half),
+                  height: scale(Spacing.two + Spacing.half),
+                  borderRadius: scale(Spacing.half),
+                },
+              ]}
+            />
+            <Text
+              style={[styles.location, { color: theme.text, fontSize: moderateScale(14) }]}
+              numberOfLines={1}>
+              {booking.dropoff_location}
+            </Text>
+          </View>
         </View>
       </Card>
     </Pressable>
@@ -91,50 +184,48 @@ export const BookingCard = memo(function BookingCard({
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.92 },
-  header: {
+  topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: Spacing.three,
-  },
-  headerLandscape: {
-    flexDirection: 'row',
     alignItems: 'center',
   },
-  routeWrap: { flex: 1, gap: 10 },
-  routePoint: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  pin: { width: Spacing.two + Spacing.half, height: Spacing.two + Spacing.half, borderRadius: Spacing.two + Spacing.half },
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  metaText: {
+    fontWeight: '500',
+  },
+  routeWrap: {
+    flexDirection: 'column',
+  },
+  routePoint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  dot: {
+    width: Spacing.two,
+    height: Spacing.two,
+    borderRadius: Spacing.two,
+  },
+  pin: {
+    width: Spacing.two + Spacing.half,
+    height: Spacing.two + Spacing.half,
+  },
   routeLine: {
     height: 14,
     width: 2,
     backgroundColor: 'rgba(0,0,0,0.12)',
-    marginLeft: Spacing.one,
   },
-  location: { fontSize: 15, fontWeight: 600, flex: 1 },
-  metaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.three,
-    marginTop: Spacing.three,
+  location: {
+    fontWeight: '600',
+    flex: 1,
   },
-  metaRowLandscape: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: { fontSize: 13, fontWeight: 500 },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: Spacing.three,
-    paddingTop: Spacing.three,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  customer: { flex: 1, minWidth: 0 },
-  customerName: { fontSize: 14, fontWeight: 700 },
-  customerPhone: { fontSize: 12 },
-  fare: { fontSize: 18, fontWeight: 800 },
 });
