@@ -28,7 +28,7 @@ function MetaIcon({
       <Text
         style={[
           styles.metaText,
-          { color: theme.textSecondary, fontSize: moderateScale(13) },
+          { color: theme.textSecondary, fontSize: moderateScale(12) },
         ]}
         numberOfLines={1}>
         {text}
@@ -52,18 +52,29 @@ export const BookingCard = memo(function BookingCard({
   const missed = isRideMissed(booking);
   const badgeStatus = missed ? 'missed' : booking.driver_status;
 
-  const pax = (booking as { pax_count?: number }).pax_count;
-  const bags = (booking as { luggage_count?: number }).luggage_count;
+  const pax = (booking as { pax_count?: number; passengers?: number }).pax_count ?? (booking as { passengers?: number }).passengers;
+  const bags = (booking as { luggage_count?: number; luggage?: number }).luggage_count ?? (booking as { luggage?: number }).luggage;
   const childSeats = (booking as { child_seats?: number }).child_seats;
   const flightNo = (booking as { flight_number?: string }).flight_number;
+  const vehicleType = (booking as { vehicle_type?: string }).vehicle_type;
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => (pressed ? styles.pressed : null)}>
       <Card>
         {/* ================= TOP SECTION ================= */}
-        {/* 1. Status Badge (Left) & You Get / Fare (Right) */}
+        {/* 1. TOP ROW: Prominent Big Time/Date (Left) & Large Fare Display (Right) */}
         <View style={styles.topRow}>
-          <StatusBadge status={badgeStatus} />
+          <Text
+            style={{
+              fontSize: moderateScale(17),
+              fontWeight: '700',
+              color: theme.text,
+              flex: 1,
+            }}
+            numberOfLines={1}>
+            {formatDate(booking.pickup_date)} {formatTime(booking.pickup_time)}
+          </Text>
+
           <View style={{ alignItems: 'flex-end' }}>
             <Text
               style={{
@@ -75,8 +86,8 @@ export const BookingCard = memo(function BookingCard({
             </Text>
             <Text
               style={{
-                fontSize: moderateScale(16),
-                fontWeight: '700',
+                fontSize: moderateScale(18),
+                fontWeight: '800',
                 color: theme.text,
               }}
               numberOfLines={1}>
@@ -85,17 +96,9 @@ export const BookingCard = memo(function BookingCard({
           </View>
         </View>
 
-        {/* 2. Date & Time Display */}
-        <View style={{ marginTop: verticalScale(Spacing.one) }}>
-          <Text
-            style={{
-              fontSize: moderateScale(16),
-              fontWeight: '700',
-              color: theme.text,
-            }}
-            numberOfLines={1}>
-            {formatDate(booking.pickup_date)} {formatTime(booking.pickup_time)}
-          </Text>
+        {/* 2. Status Badge Row */}
+        <View style={{ marginTop: verticalScale(Spacing.one), alignItems: 'flex-start' }}>
+          <StatusBadge status={badgeStatus} />
         </View>
 
         {/* ================= DIVIDER ================= */}
@@ -103,14 +106,14 @@ export const BookingCard = memo(function BookingCard({
           style={[
             styles.divider,
             {
-              backgroundColor: theme.border || 'rgba(0,0,0,0.08)',
+              backgroundColor: theme.border,
               marginVertical: verticalScale(Spacing.two),
             },
           ]}
         />
 
         {/* ================= BOTTOM SECTION ================= */}
-        {/* 3. Ride Meta Indicators Row */}
+        {/* 3. Ride Meta Indicators Row (Passengers, Bags, Child Seats, Vehicle / Flight) */}
         <View
           style={[
             styles.metaRow,
@@ -122,27 +125,39 @@ export const BookingCard = memo(function BookingCard({
           {typeof pax === 'number' ? (
             <MemoizedMeta
               icon="people-outline"
-              text={`${pax}`}
+              text={`${pax} Pax`}
               theme={theme}
               moderateScale={moderateScale}
             />
           ) : null}
+
           {typeof bags === 'number' ? (
             <MemoizedMeta
               icon="briefcase-outline"
-              text={`${bags}`}
+              text={`${bags} Bags`}
               theme={theme}
               moderateScale={moderateScale}
             />
           ) : null}
+
           {typeof childSeats === 'number' && childSeats > 0 ? (
             <MemoizedMeta
               icon="person-add-outline"
-              text={`${childSeats}`}
+              text={`${childSeats} Seats`}
               theme={theme}
               moderateScale={moderateScale}
             />
           ) : null}
+
+          {vehicleType ? (
+            <MemoizedMeta
+              icon="car-outline"
+              text={vehicleType}
+              theme={theme}
+              moderateScale={moderateScale}
+            />
+          ) : null}
+
           {flightNo ? (
             <MemoizedMeta
               icon="airplane-outline"
@@ -183,13 +198,13 @@ export const BookingCard = memo(function BookingCard({
               styles.dashedLineContainer,
               {
                 height: verticalScale(12),
-                marginLeft: scale(11), // Centers line with the dot above
+                marginLeft: scale(11),
               },
             ]}>
             <View
               style={[
                 styles.dashedLine,
-                { borderColor: theme.border || theme.textSecondary },
+                { borderColor: theme.border },
               ]}
             />
           </View>
