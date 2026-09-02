@@ -15,22 +15,20 @@ function MetaIcon({
   icon,
   text,
   theme,
-  scale,
   moderateScale,
 }: {
   icon: React.ComponentProps<typeof Ionicons>['name'];
   text: string;
   theme: ReturnType<typeof useTheme>;
-  scale: (n: number) => number;
   moderateScale: (n: number, factor?: number) => number;
 }) {
   return (
     <View style={styles.metaItem}>
-      <Ionicons name={icon} size={moderateScale(14)} color={theme.textSecondary} />
+      <Ionicons name={icon} size={moderateScale(15)} color={theme.textSecondary} />
       <Text
         style={[
           styles.metaText,
-          { color: theme.textSecondary, fontSize: moderateScale(12) },
+          { color: theme.textSecondary, fontSize: moderateScale(13) },
         ]}
         numberOfLines={1}>
         {text}
@@ -62,14 +60,15 @@ export const BookingCard = memo(function BookingCard({
   return (
     <Pressable onPress={onPress} style={({ pressed }) => (pressed ? styles.pressed : null)}>
       <Card>
-        {/* 1. Top Row: Status badge (left) + Driver payout (right) */}
-        <View style={[styles.topRow, { marginBottom: verticalScale(Spacing.two) }]}>
+        {/* ================= TOP SECTION ================= */}
+        {/* 1. Status Badge (Left) & You Get / Fare (Right) */}
+        <View style={styles.topRow}>
           <StatusBadge status={badgeStatus} />
           <View style={{ alignItems: 'flex-end' }}>
             <Text
               style={{
                 fontSize: moderateScale(11),
-                fontWeight: '600',
+                fontWeight: '500',
                 color: theme.textSecondary,
               }}>
               You get
@@ -77,7 +76,7 @@ export const BookingCard = memo(function BookingCard({
             <Text
               style={{
                 fontSize: moderateScale(16),
-                fontWeight: '800',
+                fontWeight: '700',
                 color: theme.text,
               }}
               numberOfLines={1}>
@@ -86,92 +85,126 @@ export const BookingCard = memo(function BookingCard({
           </View>
         </View>
 
-        {/* 2. Date & Time Row */}
-        <Text
-          style={{
-            fontSize: moderateScale(15),
-            fontWeight: '700',
-            color: theme.text,
-            marginBottom: verticalScale(Spacing.two),
-          }}
-          numberOfLines={1}>
-          {formatDate(booking.pickup_date)} · {formatTime(booking.pickup_time)}
-        </Text>
+        {/* 2. Date & Time Display */}
+        <View style={{ marginTop: verticalScale(Spacing.one) }}>
+          <Text
+            style={{
+              fontSize: moderateScale(16),
+              fontWeight: '700',
+              color: theme.text,
+            }}
+            numberOfLines={1}>
+            {formatDate(booking.pickup_date)} {formatTime(booking.pickup_time)}
+          </Text>
+        </View>
 
+        {/* ================= DIVIDER ================= */}
+        <View
+          style={[
+            styles.divider,
+            {
+              backgroundColor: theme.border || 'rgba(0,0,0,0.08)',
+              marginVertical: verticalScale(Spacing.two),
+            },
+          ]}
+        />
+
+        {/* ================= BOTTOM SECTION ================= */}
         {/* 3. Ride Meta Indicators Row */}
         <View
           style={[
             styles.metaRow,
             {
-              gap: scale(Spacing.three),
-              marginBottom: verticalScale(Spacing.three),
+              gap: scale(Spacing.two + Spacing.half),
+              marginBottom: verticalScale(Spacing.two),
             },
           ]}>
           {typeof pax === 'number' ? (
             <MemoizedMeta
               icon="people-outline"
-              text={`${pax} Pax`}
+              text={`${pax}`}
               theme={theme}
-              scale={scale}
               moderateScale={moderateScale}
             />
           ) : null}
           {typeof bags === 'number' ? (
             <MemoizedMeta
               icon="briefcase-outline"
-              text={`${bags} Bags`}
+              text={`${bags}`}
               theme={theme}
-              scale={scale}
               moderateScale={moderateScale}
             />
           ) : null}
           {typeof childSeats === 'number' && childSeats > 0 ? (
             <MemoizedMeta
               icon="person-add-outline"
-              text={`${childSeats} Seats`}
+              text={`${childSeats}`}
               theme={theme}
-              scale={scale}
               moderateScale={moderateScale}
             />
           ) : null}
           {flightNo ? (
             <MemoizedMeta
               icon="airplane-outline"
-              text={`Flight ${flightNo}`}
+              text={flightNo}
               theme={theme}
-              scale={scale}
               moderateScale={moderateScale}
             />
           ) : null}
         </View>
 
-        {/* 4. Route Section: Vertical Timeline */}
-        <View style={[styles.routeWrap, { gap: verticalScale(Spacing.two) }]}>
-          <View style={styles.routePoint}>
-            <View style={[styles.dot, { backgroundColor: theme.brand }]} />
+        {/* 4. Route Timeline Section (Pickup -> Dashed Line -> Dropoff) */}
+        <View style={styles.routeWrap}>
+          {/* Pickup Point */}
+          <View style={[styles.routePoint, { gap: scale(Spacing.two) }]}>
+            <View style={styles.iconContainer}>
+              <View
+                style={[
+                  styles.hollowDot,
+                  {
+                    borderColor: theme.textSecondary,
+                    width: scale(10),
+                    height: scale(10),
+                    borderRadius: scale(5),
+                  },
+                ]}
+              />
+            </View>
             <Text
-              style={[styles.location, { color: theme.text, fontSize: moderateScale(14) }]}
+              style={[styles.location, { color: theme.text, fontSize: moderateScale(13) }]}
               numberOfLines={1}>
               {booking.pickup_location}
             </Text>
           </View>
 
-          <View style={[styles.routeLine, { marginLeft: scale(Spacing.one) }]} />
-
-          <View style={styles.routePoint}>
+          {/* Dotted Vertical Connector Line */}
+          <View
+            style={[
+              styles.dashedLineContainer,
+              {
+                height: verticalScale(12),
+                marginLeft: scale(11), // Centers line with the dot above
+              },
+            ]}>
             <View
               style={[
-                styles.pin,
-                {
-                  backgroundColor: theme.danger,
-                  width: scale(Spacing.two + Spacing.half),
-                  height: scale(Spacing.two + Spacing.half),
-                  borderRadius: scale(Spacing.half),
-                },
+                styles.dashedLine,
+                { borderColor: theme.border || theme.textSecondary },
               ]}
             />
+          </View>
+
+          {/* Dropoff Point */}
+          <View style={[styles.routePoint, { gap: scale(Spacing.two) }]}>
+            <View style={styles.iconContainer}>
+              <Ionicons
+                name="location"
+                size={moderateScale(15)}
+                color={theme.brand}
+              />
+            </View>
             <Text
-              style={[styles.location, { color: theme.text, fontSize: moderateScale(14) }]}
+              style={[styles.location, { color: theme.text, fontSize: moderateScale(13) }]}
               numberOfLines={1}>
               {booking.dropoff_location}
             </Text>
@@ -183,11 +216,17 @@ export const BookingCard = memo(function BookingCard({
 });
 
 const styles = StyleSheet.create({
-  pressed: { opacity: 0.92 },
+  pressed: {
+    opacity: 0.92,
+  },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  divider: {
+    height: 1,
+    width: '100%',
   },
   metaRow: {
     flexDirection: 'row',
@@ -197,10 +236,10 @@ const styles = StyleSheet.create({
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: Spacing.half,
   },
   metaText: {
-    fontWeight: '500',
+    fontWeight: '600',
   },
   routeWrap: {
     flexDirection: 'column',
@@ -208,24 +247,27 @@ const styles = StyleSheet.create({
   routePoint: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
   },
-  dot: {
-    width: Spacing.two,
-    height: Spacing.two,
-    borderRadius: Spacing.two,
+  iconContainer: {
+    width: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  pin: {
-    width: Spacing.two + Spacing.half,
-    height: Spacing.two + Spacing.half,
+  hollowDot: {
+    borderWidth: 1.5,
+    backgroundColor: 'transparent',
   },
-  routeLine: {
-    height: 14,
-    width: 2,
-    backgroundColor: 'rgba(0,0,0,0.12)',
+  dashedLineContainer: {
+    justifyContent: 'center',
+  },
+  dashedLine: {
+    height: '100%',
+    borderLeftWidth: 1.5,
+    borderStyle: 'dashed',
+    width: 1,
   },
   location: {
-    fontWeight: '600',
+    fontWeight: '500',
     flex: 1,
   },
 });
