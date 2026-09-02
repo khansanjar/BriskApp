@@ -16,14 +16,14 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RideMap } from '@/components/RideMap';
+import { BookingCard } from '@/components/booking-card';
 import { Avatar } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { DriverStatusMeta, ScreenHorizontalMargin, Spacing, TAB_BAR_BOTTOM_OFFSET, TAB_BAR_HEIGHT } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { getDashboard, type Booking, type DashboardData, type User } from '@/lib/api';
-import { isRideMissed } from '@/lib/booking-status';
-import { formatCurrency, formatTime } from '@/lib/format';
+import { formatCurrency } from '@/lib/format';
 import { getUser } from '@/lib/storage';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
@@ -321,11 +321,7 @@ export default function DashboardScreen() {
             ) : !data ? (
               <ActivityIndicator color={theme.brand} style={{ padding: Spacing.three }} />
             ) : assignedToday[0] ? (
-              <Pressable
-                onPress={() => openBooking(assignedToday[0].booking_id)}
-                style={({ pressed }) => (pressed ? { opacity: 0.92 } : null)}>
-                <CardCompact booking={assignedToday[0]} />
-              </Pressable>
+              <BookingCard booking={assignedToday[0]} onPress={() => openBooking(assignedToday[0].booking_id)} />
             ) : (
               <EmptyStateInline
                 icon="car-outline"
@@ -374,15 +370,14 @@ export default function DashboardScreen() {
               ) : (
                 <View style={{ gap: verticalScale(Spacing.three) }}>
                   {assignedToday.map((item) => (
-                    <Pressable
+                    <BookingCard
                       key={item.booking_id}
+                      booking={item}
                       onPress={() => {
                         setShowAllRides(false);
                         openBooking(item.booking_id);
                       }}
-                      style={({ pressed }) => (pressed ? { opacity: 0.92 } : null)}>
-                      <CardCompact booking={item} />
-                    </Pressable>
+                    />
                   ))}
                 </View>
               )}
@@ -394,54 +389,6 @@ export default function DashboardScreen() {
   );
 }
 
-function CardCompact({ booking }: { booking: Booking }) {
-  const theme = useTheme();
-  const { scale, verticalScale, moderateScale } = useResponsive();
-  return (
-    <View style={{
-      borderRadius: moderateScale(16),
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.border,
-      overflow: 'hidden',
-    }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: scale(Spacing.two), padding: scale(Spacing.two) }}>
-        <View style={{
-          width: scale(40),
-          height: scale(40),
-          borderRadius: moderateScale(12),
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: theme.brandSoft,
-        }}>
-          <Ionicons name="car-outline" size={scale(22)} color={theme.brand} />
-        </View>
-        <View style={{ flex: 1, gap: verticalScale(2), minWidth: 0 }}>
-          <Text style={{ fontSize: moderateScale(14), fontWeight: '700', flexShrink: 1, color: theme.text }} numberOfLines={1}>
-            {booking.pickup_location}
-          </Text>
-          <Text style={{ fontSize: moderateScale(12), fontWeight: '700', marginVertical: verticalScale(2), color: theme.textSecondary }}>↓</Text>
-          <Text style={{ fontSize: moderateScale(14), fontWeight: '700', flexShrink: 1, color: theme.text }} numberOfLines={1}>
-            {booking.dropoff_location}
-          </Text>
-        </View>
-        <StatusBadge status={isRideMissed(booking) ? 'missed' : booking.driver_status} />
-      </View>
-      <View style={{
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: scale(Spacing.two),
-        paddingTop: verticalScale(Spacing.two),
-        borderTopWidth: StyleSheet.hairlineWidth,
-        borderTopColor: theme.border,
-        paddingHorizontal: scale(Spacing.two),
-        paddingBottom: verticalScale(Spacing.two),
-      }}>
-        <Meta icon="time-outline" text={formatTime(booking.pickup_time)} />
-        {booking.vehicle_type ? <Meta icon="car-outline" text={booking.vehicle_type} /> : null}
-      </View>
-    </View>
-  );
-}
 
 function EmptyStateInline({
   icon,
@@ -490,13 +437,3 @@ function EmptyStateInline({
   );
 }
 
-function Meta({ icon, text }: { icon: IoniconName; text: string }) {
-  const theme = useTheme();
-  const { scale, moderateScale } = useResponsive();
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(6) }}>
-      <Ionicons name={icon} size={scale(14)} color={theme.textSecondary} />
-      <Text numberOfLines={1} style={{ fontSize: moderateScale(13), fontWeight: '500', color: theme.textSecondary, flexShrink: 1 }}>{text}</Text>
-    </View>
-  );
-}
