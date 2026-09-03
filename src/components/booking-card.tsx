@@ -52,9 +52,17 @@ export const BookingCard = memo(function BookingCard({
   const missed = isRideMissed(booking);
   const badgeStatus = missed ? 'missed' : booking.driver_status;
 
-  const vehicleType = booking.vehicleType ?? (booking as any).vehicle_type;
-  const pax = booking.adults ?? (booking as any).pax_count ?? (booking as any).passengers;
-  const childSeats = booking.childSeat ?? (booking as any).child_seats;
+   const vehicleType = booking.vehicleType ?? (booking as any).vehicle_type;
+   const pax = booking.adults ?? (booking as any).pax_count ?? (booking as any).passengers;
+   const childSeats = booking.childSeat ?? (booking as any).child_seats;
+
+   const flightNo = booking.flightnumber ?? (booking as any).flight_number;
+   const flightTime = booking.flight_time_24h ?? booking.flightTime;
+   const showFlight = !!(flightNo && String(flightNo).trim() !== '');
+   const flightDisplay =
+     showFlight && flightTime
+       ? `${flightNo} • ${flightTime}`
+       : flightNo ?? '';
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => (pressed ? styles.pressed : null)}>
@@ -138,15 +146,24 @@ export const BookingCard = memo(function BookingCard({
             />
           ) : null}
 
-          {vehicleType ? (
-            <MemoizedMeta
-              icon="car-outline"
-              text={vehicleType}
-              theme={theme}
-              moderateScale={moderateScale}
-            />
-          ) : null}
-        </View>
+           {vehicleType ? (
+             <MemoizedMeta
+               icon="car-outline"
+               text={vehicleType}
+               theme={theme}
+               moderateScale={moderateScale}
+             />
+           ) : null}
+
+           {showFlight ? (
+             <MemoizedMeta
+               icon="airplane-outline"
+               text={flightDisplay}
+               theme={theme}
+               moderateScale={moderateScale}
+             />
+           ) : null}
+         </View>
 
         {/* 4. Route Timeline Section (Pickup -> Dashed Line -> Dropoff) */}
         <View style={styles.routeWrap}>

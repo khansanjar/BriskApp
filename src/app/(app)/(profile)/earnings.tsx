@@ -332,12 +332,20 @@ function RideDetailModal({ ride, visible, onClose, theme, scale, verticalScale, 
   verticalScale: (n: number) => number;
   moderateScale: (n: number) => number;
 }) {
-  if (!ride) return null;
+   if (!ride) return null;
 
-  const decodedPickup = decodeHTMLEntities(ride.pickup_location);
-  const decodedDropoff = decodeHTMLEntities(ride.dropoff_location);
+   const decodedPickup = decodeHTMLEntities(ride.pickup_location);
+   const decodedDropoff = decodeHTMLEntities(ride.dropoff_location);
 
-  return (
+   const flightNo = ride.flightnumber ?? (ride as any).flight_number;
+   const flightTime = ride.flight_time_24h ?? ride.flightTime;
+   const showFlight = !!(flightNo && String(flightNo).trim() !== '');
+   const flightDisplay =
+     showFlight && flightTime
+       ? `${flightNo} • ${flightTime}`
+       : flightNo ?? '';
+
+   return (
     <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
       <View style={{
         flex: 1,
@@ -449,9 +457,23 @@ function RideDetailModal({ ride, visible, onClose, theme, scale, verticalScale, 
                 </View>
               </Card>
 
-              <Card style={{ gap: verticalScale(Spacing.two) }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary }}>Total Fare</Text>
+               {showFlight ? (
+                 <Card style={{ gap: verticalScale(Spacing.two) }}>
+                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.two) }}>
+                     <Ionicons name="airplane-outline" size={moderateScale(18)} color={theme.textSecondary} />
+                     <View style={{ flexShrink: 1 }}>
+                       <Text style={{ fontSize: moderateScale(12), color: theme.textSecondary }}>Flight</Text>
+                       <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text }} numberOfLines={1}>
+                         {flightDisplay}
+                       </Text>
+                     </View>
+                   </View>
+                 </Card>
+               ) : null}
+
+               <Card style={{ gap: verticalScale(Spacing.two) }}>
+                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                   <Text style={{ fontSize: moderateScale(14), color: theme.textSecondary }}>Total Fare</Text>
                   <Text style={{ fontSize: moderateScale(18), fontWeight: '800', color: theme.success }}>{formatCurrency(ride.total_fare)}</Text>
                 </View>
               </Card>
