@@ -53,9 +53,7 @@ export const BookingCard = memo(function BookingCard({
   const badgeStatus = missed ? 'missed' : booking.driver_status;
 
   const pax = (booking as { pax_count?: number; passengers?: number }).pax_count ?? (booking as { passengers?: number }).passengers;
-  const bags = (booking as { luggage_count?: number; luggage?: number }).luggage_count ?? (booking as { luggage?: number }).luggage;
   const childSeats = (booking as { child_seats?: number }).child_seats;
-  const flightNo = (booking as { flight_number?: string }).flight_number;
   const vehicleType = (booking as { vehicle_type?: string }).vehicle_type;
 
   return (
@@ -113,7 +111,7 @@ export const BookingCard = memo(function BookingCard({
         />
 
         {/* ================= BOTTOM SECTION ================= */}
-        {/* 3. Ride Meta Indicators Row (Passengers, Bags, Child Seats, Vehicle / Flight) */}
+        {/* 3. Ride Meta Indicators Row (Passengers, Child Seats, Vehicle) */}
         <View
           style={[
             styles.metaRow,
@@ -126,15 +124,6 @@ export const BookingCard = memo(function BookingCard({
             <MemoizedMeta
               icon="people-outline"
               text={`${pax} Pax`}
-              theme={theme}
-              moderateScale={moderateScale}
-            />
-          ) : null}
-
-          {typeof bags === 'number' ? (
-            <MemoizedMeta
-              icon="briefcase-outline"
-              text={`${bags} Bags`}
               theme={theme}
               moderateScale={moderateScale}
             />
@@ -153,15 +142,6 @@ export const BookingCard = memo(function BookingCard({
             <MemoizedMeta
               icon="car-outline"
               text={vehicleType}
-              theme={theme}
-              moderateScale={moderateScale}
-            />
-          ) : null}
-
-          {flightNo ? (
-            <MemoizedMeta
-              icon="airplane-outline"
-              text={flightNo}
               theme={theme}
               moderateScale={moderateScale}
             />

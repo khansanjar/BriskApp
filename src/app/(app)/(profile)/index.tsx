@@ -4,17 +4,17 @@ import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import * as Updates from 'expo-updates';
 import { useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
-import { Spacing } from '@/constants/theme';
+import { BottomTabInset, ScreenHorizontalMargin, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { updateProfile, type User } from '@/lib/api';
 import { useThemeMode, type ThemeMode } from '@/theme/theme-context';
 
@@ -37,6 +37,7 @@ function formatUpdateId(id?: string | null): string {
 
 export default function ProfileScreen() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { isLandscape, scale, verticalScale, moderateScale } = useResponsive();
   const { mode, setMode } = useThemeMode();
   const { user, signOut, updateLocalUser } = useAuth();
@@ -71,14 +72,23 @@ export default function ProfileScreen() {
   }
 
   return (
-    <Screen>
-      <View style={{
-        width: '100%',
-        alignItems: isLandscape ? 'flex-start' : 'center',
-        gap: verticalScale(Spacing.two),
-        marginBottom: verticalScale(Spacing.three),
-        flexDirection: isLandscape ? 'row' : 'column',
-      }}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: theme.background }}
+        contentContainerStyle={{
+          paddingTop: insets.top + Spacing.four,
+          paddingHorizontal: ScreenHorizontalMargin,
+          paddingBottom: Spacing.six + BottomTabInset + Spacing.three,
+          flexGrow: 1,
+        }}
+        showsVerticalScrollIndicator={false}>
+        <View style={{
+          width: '100%',
+          alignItems: isLandscape ? 'flex-start' : 'center',
+          gap: verticalScale(Spacing.two),
+          marginBottom: verticalScale(Spacing.three),
+          flexDirection: isLandscape ? 'row' : 'column',
+        }}>
         <View style={{
           padding: scale(Spacing.half),
           borderRadius: moderateScale(999),
@@ -261,7 +271,8 @@ export default function ProfileScreen() {
         <Ionicons name="log-out-outline" size={scale(20)} color={theme.danger} />
         <Text style={{ fontSize: moderateScale(16), fontWeight: '700', color: theme.danger }}>Log out</Text>
       </Pressable>
-    </Screen>
+      </ScrollView>
+    </View>
   );
 }
 

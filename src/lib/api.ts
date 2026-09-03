@@ -1,6 +1,5 @@
 /**
  * Brisk Transfers — Driver App API client.
- * Base URL: https://brisktransfers.vectosol.online/api/driver
  *
  * Every call is JSON over HTTPS. The bearer token returned at login is sent on
  * every authenticated request via the Authorization header.
