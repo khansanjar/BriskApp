@@ -52,9 +52,9 @@ export const BookingCard = memo(function BookingCard({
   const missed = isRideMissed(booking);
   const badgeStatus = missed ? 'missed' : booking.driver_status;
 
-  const pax = (booking as { pax_count?: number; passengers?: number }).pax_count ?? (booking as { passengers?: number }).passengers;
-  const childSeats = (booking as { child_seats?: number }).child_seats;
-  const vehicleType = (booking as { vehicle_type?: string }).vehicle_type;
+  const vehicleType = booking.vehicleType ?? (booking as any).vehicle_type;
+  const pax = booking.adults ?? (booking as any).pax_count ?? (booking as any).passengers;
+  const childSeats = booking.childSeat ?? (booking as any).child_seats;
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => (pressed ? styles.pressed : null)}>

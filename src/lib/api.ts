@@ -51,9 +51,17 @@ export interface Booking {
   pickup_date: string;
   pickup_time: string;
   vehicle_type: string | null;
+  vehicleType?: string;
   total_fare: number;
+  totalDistance?: number;
+  totalDuration?: number;
   driver_status: DriverStatus;
+  adults?: number;
+  children?: number;
+  childSeat?: number;
   customer?: Customer;
+  customer_name?: string;
+  customer_phone?: string;
   assignment_status?: string | null;
   started_at?: string | null;
   completed_at?: string | null;
