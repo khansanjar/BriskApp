@@ -72,8 +72,13 @@ export function BookingDetail({
       ? `${flightNo} • ${flightTime}`
       : flightNo ?? '';
 
-  const extraComment = booking.extracomment ?? booking.notes;
-  const showComments = !!(extraComment && extraComment.trim() !== '');
+  const vehicleType = booking.vehicleType ?? booking.vehicle_type ?? '—';
+  const extraComment = (booking.extracomment && booking.extracomment.trim() !== '')
+    ? booking.extracomment
+    : (booking.notes && booking.notes.trim() !== '')
+      ? booking.notes
+      : null;
+  const showComments = extraComment !== null;
 
   const returnPickupLocation =
     (booking as any).return_pickup_location ?? booking.dropoff_location ?? '';
@@ -186,7 +191,7 @@ export function BookingDetail({
       <Card>
         <Row label="Date" value={formatDate(booking.pickup_date)} icon="calendar-outline" />
         <Row label="Time" value={formatTime(booking.pickup_time)} icon="time-outline" />
-        <Row label="Vehicle" value={booking.vehicle_type ?? '—'} icon="car-outline" />
+        <Row label="Vehicle" value={vehicleType} icon="car-outline" />
         <Row label="Order ID" value={booking.order_id} icon="receipt-outline" />
         {isReturnTrip ? (
           <Row label="Trip Type" value="Two-Way" icon="airplane-outline" />
@@ -250,6 +255,12 @@ export function BookingDetail({
             </Pressable>
           ) : null}
         </View>
+        {vehicleType !== '—' ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.one), marginTop: verticalScale(Spacing.two), paddingTop: verticalScale(Spacing.two), borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border }}>
+            <Ionicons name="car-outline" size={scale(14)} color={theme.textSecondary} />
+            <Text style={{ fontSize: moderateScale(13), color: theme.textSecondary }}>{vehicleType}</Text>
+          </View>
+        ) : null}
       </Card>
 
       {/* Notes / Comments Card */}
