@@ -1,11 +1,10 @@
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { useState, type ComponentProps } from 'react';
-import { Alert, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { type ComponentProps } from 'react';
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -45,14 +44,10 @@ export function BookingDetail({
   booking,
   onUpdate,
   updating,
-  onCancel,
-  cancelling,
 }: {
   booking: Booking;
   onUpdate: (status: DriverStatus) => void;
   updating: boolean;
-  onCancel: (reason?: string) => void;
-  cancelling: boolean;
 }) {
   const theme = useTheme();
   const { scale, verticalScale, moderateScale } = useResponsive();
@@ -89,24 +84,6 @@ export function BookingDetail({
     '';
   const returnDate = booking.return_date ?? '';
   const returnTime = booking.return_time ?? '';
-
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
-
-  function handleCancelPress() {
-    setShowCancelConfirm(true);
-  }
-
-  function handleCancelConfirm() {
-    setShowCancelConfirm(false);
-    onCancel(cancelReason.trim() || undefined);
-    setCancelReason('');
-  }
-
-  function handleCancelDismiss() {
-    setShowCancelConfirm(false);
-    setCancelReason('');
-  }
 
   function handleStatusPress(status: DriverStatus) {
     if (status === 'heading_to_pickup') {
@@ -292,75 +269,6 @@ export function BookingDetail({
               onPress={() => handleStatusPress(item.value)}
             />
           ))}
-
-          {booking.driver_status === 'assigned' && !showCancelConfirm ? (
-            <Button
-              title="Cancel Ride"
-              variant="destructive"
-              loading={cancelling}
-              disabled={updating || cancelling}
-              onPress={handleCancelPress}
-            />
-          ) : null}
-
-          {showCancelConfirm ? (
-            <Modal visible={showCancelConfirm} animationType="fade" transparent>
-              <View style={{
-                flex: 1,
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <View style={{
-                  alignItems: 'center',
-                  gap: verticalScale(Spacing.two),
-                  padding: scale(Spacing.four),
-                  borderRadius: scale(Spacing.five),
-                  width: '85%',
-                  maxWidth: scale(400),
-                  backgroundColor: theme.surface,
-                }}>
-                  <View style={{
-                    width: scale(40),
-                    height: scale(40),
-                    borderRadius: scale(20),
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: theme.dangerSoft,
-                  }}>
-                    <Ionicons name="alert-circle-outline" size={scale(24)} color={theme.danger} />
-                  </View>
-                  <Text style={{ fontSize: moderateScale(16), fontWeight: '700', color: theme.text }}>Cancel this ride?</Text>
-                  <Text style={{ fontSize: moderateScale(13), lineHeight: verticalScale(18), textAlign: 'center', color: theme.textSecondary }}>
-                    This action cannot be undone. The customer will be notified.
-                  </Text>
-                  <TextField
-                    label="Reason (optional)"
-                    placeholder="Why are you cancelling?"
-                    value={cancelReason}
-                    onChangeText={setCancelReason}
-                    containerStyle={{ marginTop: verticalScale(Spacing.two), width: '100%' }}
-                  />
-                  <View style={{ flexDirection: 'row', marginTop: verticalScale(Spacing.three), width: '100%', justifyContent: 'center' }}>
-                    <Button
-                      title="Keep ride"
-                      variant="secondary"
-                      onPress={handleCancelDismiss}
-                      disabled={cancelling}
-                    />
-                    <View style={{ width: scale(Spacing.two) }} />
-                    <Button
-                      title="Yes, cancel ride"
-                      variant="destructive"
-                      loading={cancelling}
-                      disabled={updating || cancelling}
-                      onPress={handleCancelConfirm}
-                    />
-                  </View>
-                </View>
-              </View>
-            </Modal>
-          ) : null}
         </View>
       )}
     </View>

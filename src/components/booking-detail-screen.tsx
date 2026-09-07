@@ -1,5 +1,5 @@
 // src/components/booking-detail-screen.tsx
-import { router, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -13,12 +13,10 @@ import { useTheme } from '@/hooks/use-theme';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
 import { type DriverStatus } from '@/lib/api';
 
-const FALLBACK_COORDINATES = { latitude: 0, longitude: 0 };
-
 export function BookingDetailScreen({ id }: { id: number }) {
   const theme = useTheme();
-  const { isLandscape, screenHeight, scale, verticalScale, wp, hp } = useResponsive();
-  const { booking, loading, updating, cancelling, error, update, cancel, reload } = useBookingDetail(id);
+  const { isLandscape, scale, verticalScale, wp, hp } = useResponsive();
+  const { booking, loading, updating, error, update, reload } = useBookingDetail(id);
   const { pickup: geocodedPickup, dropoff: geocodedDropoff } = useBookingCoordinates(booking);
 
   useLocationTracking(booking?.booking_id ?? null, booking?.driver_status ?? null);
@@ -34,22 +32,6 @@ export function BookingDetailScreen({ id }: { id: number }) {
       // Cleanup when booking ID changes
     };
   }, [id]);
-
-  const handleCancel = async (reason?: string) => {
-    try {
-      await cancel(reason);
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace('/(app)/(bookings)');
-      }
-    } catch (e) {
-      Alert.alert(
-        'Could not cancel ride',
-        e instanceof Error ? e.message : 'Please try again.'
-      );
-    }
-  };
 
   const handleUpdate = useCallback(
     async (status: DriverStatus) => {
@@ -101,8 +83,6 @@ export function BookingDetailScreen({ id }: { id: number }) {
       booking={booking}
       onUpdate={handleUpdate}
       updating={updating}
-      onCancel={handleCancel}
-      cancelling={cancelling}
     />
   );
 

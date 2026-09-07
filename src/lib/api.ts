@@ -353,23 +353,6 @@ export async function updateBookingStatus(
   });
 }
 
-export interface CancelBookingResponse {
-  driver_status: 'canceled';
-  ride_status: number;
-  customer_notified: boolean;
-  admin_notified: boolean;
-}
-
-export async function cancelBooking(
-  id: number | string,
-  reason?: string
-): Promise<CancelBookingResponse> {
-  return request<CancelBookingResponse>(`/booking/${id}/cancel`, {
-    method: 'PUT',
-    body: reason ? { reason } : {},
-  });
-}
-
 export async function postLocationBatch(
   booking_id: number | string,
   locations: {

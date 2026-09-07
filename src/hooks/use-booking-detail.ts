@@ -2,7 +2,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import {
-    cancelBooking,
     getBooking,
     updateBookingStatus,
     type Booking,
@@ -13,7 +12,6 @@ export function useBookingDetail(id: number) {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -58,21 +56,5 @@ export function useBookingDetail(id: number) {
     [id, load]
   );
 
-  const cancel = useCallback(
-    async (reason?: string) => {
-      setCancelling(true);
-      setError(null);
-      try {
-        await cancelBooking(id, reason);
-        await load();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Could not cancel ride.');
-      } finally {
-        setCancelling(false);
-      }
-    },
-    [id, load]
-  );
-
-  return { booking, loading, updating, cancelling, error, reload: load, update, cancel };
+  return { booking, loading, updating, error, reload: load, update };
 }
