@@ -68,12 +68,8 @@ export interface Booking {
    notes?: string | null;
    flightnumber?: string | null;
    flightTime?: string | null;
-   flight_time_24h?: string | null;
-   is_return_trip?: number | boolean | null;
-   return_date?: string | null;
-   return_time?: string | null;
-   return_location?: string | null;
-   extracomment?: string | null;
+    flight_time_24h?: string | null;
+    extracomment?: string | null;
 }
 
 export interface HistoryBooking {

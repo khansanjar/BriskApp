@@ -54,11 +54,6 @@ export function BookingDetail({
   const next = TRANSITIONS[booking.driver_status] ?? [];
   const missed = isRideMissed(booking);
 
-  const isReturnTrip =
-    booking.is_return_trip === 1 ||
-    booking.is_return_trip === true ||
-    (!!booking.return_date && booking.return_date.trim() !== '');
-
   const flightNo = booking.flightnumber ?? (booking as any).flight_number;
   const flightTime = booking.flight_time_24h ?? booking.flightTime;
   const showFlight = !!(flightNo && String(flightNo).trim() !== '');
@@ -74,16 +69,6 @@ export function BookingDetail({
       ? booking.notes
       : null;
   const showComments = extraComment !== null;
-
-  const returnPickupLocation =
-    (booking as any).return_pickup_location ?? booking.dropoff_location ?? '';
-  const returnDestinationLocation =
-    (booking as any).return_dropoff_location ??
-    booking.return_location ??
-    booking.pickup_location ??
-    '';
-  const returnDate = booking.return_date ?? '';
-  const returnTime = booking.return_time ?? '';
 
   function handleStatusPress(status: DriverStatus) {
     if (status === 'heading_to_pickup') {
@@ -134,33 +119,6 @@ export function BookingDetail({
               {booking.dropoff_location}
             </Text>
           </View>
-
-          {/* Return Trip (If Two-Way) */}
-          {isReturnTrip ? (
-            <View style={{ marginTop: verticalScale(Spacing.two), paddingTop: verticalScale(Spacing.two), borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(Spacing.one), marginBottom: verticalScale(Spacing.two) }}>
-                <Ionicons name="airplane-outline" size={scale(14)} color={theme.brand} />
-                <Text style={{ fontSize: moderateScale(11), fontWeight: '700', textTransform: 'uppercase', color: theme.brand }}>
-                  Return Trip {returnDate ? `• ${formatDate(returnDate)} ${returnTime ? formatTime(returnTime) : ''}` : ''}
-                </Text>
-              </View>
-
-              <View style={{ gap: verticalScale(Spacing.two) }}>
-                <View>
-                  <Point color={theme.brand} shape="dot" label="Return Pickup" />
-                  <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text, marginTop: verticalScale(4) }}>
-                    {returnPickupLocation}
-                  </Text>
-                </View>
-                <View>
-                  <Point color={theme.success} shape="square" label="Return Dropoff" />
-                  <Text style={{ fontSize: moderateScale(14), fontWeight: '600', color: theme.text, marginTop: verticalScale(4) }}>
-                    {returnDestinationLocation}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          ) : null}
         </View>
       </Card>
 
@@ -170,9 +128,6 @@ export function BookingDetail({
         <Row label="Time" value={formatTime(booking.pickup_time)} icon="time-outline" />
         <Row label="Vehicle" value={vehicleType} icon="car-outline" />
         <Row label="Order ID" value={booking.order_id} icon="receipt-outline" />
-        {isReturnTrip ? (
-          <Row label="Trip Type" value="Two-Way" icon="airplane-outline" />
-        ) : null}
         {showFlight ? (
           <Row label="Flight" value={flightValue} icon="airplane-outline" />
         ) : null}
