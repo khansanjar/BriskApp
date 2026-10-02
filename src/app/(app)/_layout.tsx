@@ -5,7 +5,7 @@ import * as Notifications from 'expo-notifications';
 import { Tabs, router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
-import { Spacing, TAB_BAR_BOTTOM_OFFSET, TAB_BAR_HEIGHT, ScreenHorizontalMargin } from '@/constants/theme';
+import { ScreenHorizontalMargin, TAB_BAR_BOTTOM_OFFSET, TAB_BAR_HEIGHT } from '@/constants/theme';
 import { registerPushToken } from '@/lib/push';
 import { useThemeMode } from '@/theme/theme-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -78,7 +78,7 @@ export default function AppLayout() {
     <Tabs
       initialRouteName="(home)"
       screenOptions={{
-        headerShown: false,
+        headerShown: true,
         tabBarActiveTintColor: colors.tabBarIcon,
         tabBarInactiveTintColor: colors.tabBarIcon,
         tabBarShowLabel: false,
@@ -112,6 +112,7 @@ export default function AppLayout() {
         name="(home)"
         options={{
           title: 'Home',
+          headerShown: false,
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons name={focused ? 'home' : 'home-outline'} color={color} size={focused ? size + 2 : size} />
           ),
@@ -139,6 +140,7 @@ export default function AppLayout() {
         name="(profile)"
         options={{
           title: 'Profile',
+          headerShown: false,
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons name={focused ? 'person' : 'person-outline'} color={color} size={focused ? size + 2 : size} />
           ),

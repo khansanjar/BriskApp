@@ -16,6 +16,7 @@ export default function NotificationsLayout() {
           headerTintColor: theme.brand,
           headerTitleStyle: { color: theme.text, fontWeight: '700' },
           contentStyle: { backgroundColor: theme.background },
+          headerShown: false
         }}
       />
     </Stack>

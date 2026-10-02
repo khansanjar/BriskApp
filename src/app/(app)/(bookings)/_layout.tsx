@@ -16,11 +16,12 @@ export default function BookingsLayout() {
           headerTintColor: theme.brand,
           headerTitleStyle: { color: theme.text, fontWeight: '700' },
           contentStyle: { backgroundColor: theme.background },
+          headerShown: false
         }}
       />
       <Stack.Screen
         name="booking/[id]"
-        options={{ title: 'Ride', headerLargeTitle: false, headerBackTitle: 'Back' }}
+        options={{ title: 'Ride', headerLargeTitle: false, headerBackTitle: 'Back', headerShown: false }}
       />
       {/* <Stack.Screen
         name="booking/heading-to-pickup/[id]"
