@@ -104,3 +104,23 @@ export const DriverStatusMeta: Record<
   canceled: { label: 'Canceled', tone: 'danger' },
   missed: { label: 'Late', tone: 'danger' },
 };
+
+export const Strings = {
+  deleteAccount: {
+    button: 'Delete account',
+    confirmTitle: 'Delete account',
+    confirmMessage: 'Are you sure you want to delete your account? This action is permanent and cannot be undone.',
+    confirmYes: 'Yes, delete',
+    confirmCancel: 'Cancel',
+    passwordTitle: 'Delete account',
+    passwordPlaceholder: 'Enter your password',
+    passwordConfirm: 'Confirm',
+    passwordCancel: 'Cancel',
+  },
+  logout: {
+    title: 'Log out',
+    message: 'Are you sure you want to log out?',
+    confirm: 'Log out',
+    cancel: 'Cancel',
+  },
+} as const;

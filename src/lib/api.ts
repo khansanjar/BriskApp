@@ -487,3 +487,25 @@ export async function getDriverEarningsReport(
   const query = search.toString();
   return request<EarningsData>(`/earnings${query ? `?${query}` : ''}`);
 }
+
+export interface DeleteAccountRequest {
+  password: string;
+}
+
+export interface DeleteAccountResponse {
+  message?: string;
+}
+
+export async function deleteAccount(payload: DeleteAccountRequest): Promise<DeleteAccountResponse> {
+  const data = await request<any>('/delete-account', {
+    method: 'POST',
+    body: payload,
+  });
+  if (typeof data === 'string') {
+    return { message: data };
+  }
+  if (data && typeof data.message === 'string') {
+    return { message: data.message };
+  }
+  return { message: data?.message };
+}

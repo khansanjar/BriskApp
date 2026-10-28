@@ -15,8 +15,10 @@ import { useAuth } from '@/context/auth';
 import { useTheme } from '@/hooks/use-theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { updateProfile, type User } from '@/lib/api';
+import { updateProfile, deleteAccount, type User } from '@/lib/api';
 import { useThemeMode, type ThemeMode } from '@/theme/theme-context';
+import { Strings } from '@/constants/theme';
+import { Modal, TextInput } from 'react-native';
 
 const MODES: { key: ThemeMode; label: string; icon: 'phone-portrait-outline' | 'sunny-outline' | 'moon-outline' }[] = [
   { key: 'system', label: 'System', icon: 'phone-portrait-outline' },
@@ -48,6 +50,48 @@ export default function ProfileScreen() {
   const [phone, setPhone] = useState(user?.userphone ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  async   function confirmDeleteAccount() {
+    Alert.alert(
+      Strings.deleteAccount.confirmTitle,
+      Strings.deleteAccount.confirmMessage,
+      [
+        { text: Strings.deleteAccount.confirmCancel, style: 'cancel' },
+        {
+          text: Strings.deleteAccount.confirmYes,
+          style: 'destructive',
+          onPress: () => {
+            setDeletePassword('');
+            setDeleteError(null);
+            setDeleteModalVisible(true);
+          },
+        },
+      ]
+    );
+  }
+
+  async function handleDeleteAccountConfirm() {
+    if (!deletePassword) return;
+    setDeleteLoading(true);
+    setDeleteError(null);
+    const minDelay = new Promise<void>((resolve) => setTimeout(resolve, 1500));
+    try {
+      const [res] = await Promise.all([deleteAccount({ password: deletePassword }), minDelay]);
+      setDeleteModalVisible(false);
+      setDeletePassword('');
+      const message = res?.message ?? 'Account deleted';
+      Alert.alert(Strings.deleteAccount.button, message, [{ text: 'OK', onPress: () => signOut() }]);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Could not delete account.';
+      setDeleteError(msg);
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
 
   async function handleSave() {
     if (!user) return;
@@ -252,6 +296,27 @@ export default function ProfileScreen() {
       </Card>
 
       <Pressable
+        onPress={confirmDeleteAccount}
+        style={({ pressed }) => [
+          {
+            width: '100%',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: scale(Spacing.two),
+            paddingVertical: verticalScale(Spacing.three),
+            borderRadius: moderateScale(14),
+            borderWidth: scale(1.5),
+            borderColor: theme.danger,
+            marginBottom: verticalScale(Spacing.two),
+          },
+          pressed && { backgroundColor: theme.dangerSoft },
+        ]}>
+        <Ionicons name="trash-outline" size={scale(20)} color={theme.danger} />
+        <Text style={{ fontSize: moderateScale(16), fontWeight: '700', color: theme.danger }}>{Strings.deleteAccount.button}</Text>
+      </Pressable>
+
+      <Pressable
         onPress={() => confirmLogout(signOut)}
         style={({ pressed }) => [
           {
@@ -269,20 +334,94 @@ export default function ProfileScreen() {
           pressed && { backgroundColor: theme.dangerSoft },
         ]}>
         <Ionicons name="log-out-outline" size={scale(20)} color={theme.danger} />
-        <Text style={{ fontSize: moderateScale(16), fontWeight: '700', color: theme.danger }}>Log out</Text>
+        <Text style={{ fontSize: moderateScale(16), fontWeight: '700', color: theme.danger }}>{Strings.logout.confirm}</Text>
       </Pressable>
       </ScrollView>
+
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (deleteLoading) return;
+          setDeleteModalVisible(false);
+          setDeleteError(null);
+        }}>
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingHorizontal: scale(Spacing.four),
+        }}>
+          <View style={{
+            width: '100%',
+            maxWidth: scale(400),
+            borderRadius: moderateScale(16),
+            backgroundColor: theme.surface,
+            padding: scale(Spacing.four),
+            gap: verticalScale(Spacing.three),
+          }}>
+            <Text style={{ fontSize: moderateScale(18), fontWeight: '800', color: theme.text }}>{Strings.deleteAccount.passwordTitle}</Text>
+            <TextInput
+              value={deletePassword}
+              onChangeText={(t) => { setDeletePassword(t); setDeleteError(null); }}
+              placeholder={Strings.deleteAccount.passwordPlaceholder}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={{
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: moderateScale(12),
+                paddingHorizontal: scale(Spacing.three),
+                paddingVertical: verticalScale(Spacing.two),
+                fontSize: moderateScale(14),
+                color: theme.text,
+                backgroundColor: theme.backgroundElement,
+              }}
+              placeholderTextColor={theme.textSecondary}
+            />
+            {deleteError ? (
+              <Text style={{ fontSize: moderateScale(13), fontWeight: '600', color: theme.danger }}>{deleteError}</Text>
+            ) : null}
+            <View style={{ flexDirection: 'row', gap: scale(Spacing.two) }}>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title={Strings.deleteAccount.passwordCancel}
+                  variant="secondary"
+                  disabled={deleteLoading}
+                  onPress={() => {
+                    if (deleteLoading) return;
+                    setDeleteModalVisible(false);
+                    setDeleteError(null);
+                  }}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title={Strings.deleteAccount.passwordConfirm}
+                  variant="primary"
+                  loading={deleteLoading}
+                  disabled={!deletePassword || deleteLoading}
+                  onPress={handleDeleteAccountConfirm}
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 function confirmLogout(onConfirm: () => void) {
   Alert.alert(
-    'Log out',
-    'Are you sure you want to log out?',
+    Strings.logout.title,
+    Strings.logout.message,
     [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: onConfirm },
+      { text: Strings.logout.cancel, style: 'cancel' },
+      { text: Strings.logout.confirm, style: 'destructive', onPress: onConfirm },
     ]
   );
 }
